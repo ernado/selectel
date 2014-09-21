@@ -25,7 +25,7 @@ func TestAuth(t *testing.T) {
 			resp.Header.Add("X-Auth-Token", "token")
 			resp.Header.Add("X-Storage-Url", "https://xxx.selcdn.ru/")
 			resp.StatusCode = http.StatusNoContent
-			c.SetClient(&TestClient{resp, nil})
+			c.setClient(&TestClient{resp, nil})
 			So(c.Auth("user", "key"), ShouldBeNil)
 			So(c.storageURL, ShouldEqual, "https://xxx.selcdn.ru/")
 			So(c.token, ShouldEqual, "token")
@@ -37,7 +37,7 @@ func TestAuth(t *testing.T) {
 			resp.Header.Add("X-Expire-Auth-Token", "110")
 			resp.Header.Add("X-Storage-Url", "https://xxx.selcdn.ru/")
 			resp.StatusCode = http.StatusNoContent
-			c.SetClient(&TestClient{resp, nil})
+			c.setClient(&TestClient{resp, nil})
 			So(c.Auth("user", "key"), ShouldNotBeNil)
 		})
 		Convey("No url", func() {
@@ -46,14 +46,14 @@ func TestAuth(t *testing.T) {
 			resp.Header.Add("X-Auth-Token", "token")
 			resp.Header.Add("X-Expire-Auth-Token", "110")
 			resp.StatusCode = http.StatusNoContent
-			c.SetClient(&TestClient{resp, nil})
+			c.setClient(&TestClient{resp, nil})
 			So(c.Auth("user", "key"), ShouldNotBeNil)
 		})
 		Convey("No expire", func() {
 			resp := new(http.Response)
 			resp.Header = http.Header{}
 			resp.StatusCode = http.StatusNoContent
-			c.SetClient(&TestClient{resp, nil})
+			c.setClient(&TestClient{resp, nil})
 			So(c.Auth("user", "key"), ShouldNotBeNil)
 		})
 		Convey("Error is not nil", func() {
@@ -62,7 +62,7 @@ func TestAuth(t *testing.T) {
 			resp.Header.Add("X-Expire-Auth-Token", "110")
 			resp.Header.Add("X-Storage-Url", "https://xxx.selcdn.ru/")
 			resp.StatusCode = http.StatusNoContent
-			c.SetClient(&TestClient{resp, http.ErrBodyNotAllowed})
+			c.setClient(&TestClient{resp, http.ErrBodyNotAllowed})
 			So(c.Auth("user", "key"), ShouldNotBeNil)
 		})
 		Convey("Bad code", func() {
@@ -71,7 +71,7 @@ func TestAuth(t *testing.T) {
 			resp.Header.Add("X-Expire-Auth-Token", "110")
 			resp.Header.Add("X-Storage-Url", "https://xxx.selcdn.ru/")
 			resp.StatusCode = http.StatusForbidden
-			c.SetClient(&TestClient{resp, nil})
+			c.setClient(&TestClient{resp, nil})
 			So(c.Auth("user", "key"), ShouldNotBeNil)
 		})
 	})
