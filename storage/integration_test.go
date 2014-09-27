@@ -25,9 +25,9 @@ func randString(n int) string {
 	return string(randData(n))
 }
 
-func TestAuth(t *testing.T) {
-	Convey("Auth", t, func() {
-		c, err := storage.NewEnv()
+func TestIntegration(t *testing.T) {
+	Convey("Integration", t, func() {
+		c, err := NewEnv()
 		So(err, ShouldBeNil)
 		So(c, ShouldNotBeNil)
 		Convey("Info", func() {
@@ -49,7 +49,9 @@ func TestAuth(t *testing.T) {
 			Convey("Download", func() {
 				link := c.URL(container, basename)
 				log.Println("GET", link)
-				res, err := http.Get(link)
+				req, err := http.NewRequest("GET", link, nil)
+				So(err, ShouldBeNil)
+				res, err := c.Do(req)
 				So(err, ShouldBeNil)
 				So(res.StatusCode, ShouldEqual, http.StatusOK)
 				defer res.Body.Close()
