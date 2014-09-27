@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -26,7 +27,7 @@ func randString(n int) string {
 }
 
 func TestIntegration(t *testing.T) {
-	Convey("Integration", t, func() {
+	test := func() {
 		c, err := NewEnv()
 		So(err, ShouldBeNil)
 		So(c, ShouldNotBeNil)
@@ -61,5 +62,15 @@ func TestIntegration(t *testing.T) {
 				So(reflect.DeepEqual(data, uploadData), ShouldBeTrue)
 			})
 		})
-	})
+	}
+	if len(os.Getenv(EnvKey)) == 0 || len(os.Getenv(EnvUser)) == 0 {
+		test = nil
+	}
+	name := "Integration"
+	if test != nil {
+		Convey(name, t, test)
+	} else {
+		log.Println("Credentials not provided. Skipping integration tests")
+		Convey(name, t, nil)
+	}
 }
