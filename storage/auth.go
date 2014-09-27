@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	authUrl          = "https://auth.selcdn.ru/"
+	authURL          = "https://auth.selcdn.ru/"
 	authUserHeader   = "X-Auth-User"
 	authKeyHeader    = "X-Auth-Key"
 	authExpireHeader = "X-Expire-Auth-Token"
-	storageUrlHeader = "X-Storage-Url"
+	storageURLHeader = "X-Storage-Url"
 	tokenDurationAdd = 10 * time.Second
 )
 
@@ -35,7 +35,7 @@ func (c *Client) Auth(user, key string) error {
 		return ErrorBadCredentials
 	}
 
-	request, _ := http.NewRequest("GET", authUrl, nil)
+	request, _ := http.NewRequest("GET", authURL, nil)
 	request.Header.Add(authUserHeader, user)
 	request.Header.Add(authKeyHeader, key)
 
@@ -58,7 +58,7 @@ func (c *Client) Auth(user, key string) error {
 	if blank(c.token) {
 		return ErrorAuth
 	}
-	c.storageURL, err = url.Parse(res.Header.Get(storageUrlHeader))
+	c.storageURL, err = url.Parse(res.Header.Get(storageURLHeader))
 	if err != nil || len(c.storageURL.String()) == 0 {
 		return ErrorAuth
 	}
@@ -70,6 +70,7 @@ func (c *Client) Auth(user, key string) error {
 	return nil
 }
 
+// Expired returns true if token is expired or does not exist
 func (c *Client) Expired() bool {
 	if c.expireFrom == nil {
 		return true

@@ -20,13 +20,17 @@ const (
 	containerCountHeader  = "X-Account-Container-Count"
 	recievedBytesHeader   = "X-Received-Bytes"
 	transferedBytesHeader = "X-Transfered-Bytes"
-	EnvUser               = "SELECTEL_USER"
-	EnvKey                = "SELECTEL_KEY"
+	// EnvUser is environmental variable for selectel api username
+	EnvUser = "SELECTEL_USER"
+	// EnvKey is environmental variable for selectel api key
+	EnvKey = "SELECTEL_KEY"
 )
 
 var (
+	// ErrorObjectNotFound occurs when server returns 404
 	ErrorObjectNotFound = errors.New("Object not found")
-	ErrorBadResponce    = errors.New("Unable to process api responce")
+	// ErrorBadResponce occurs when server returns unexpected code
+	ErrorBadResponce = errors.New("Unable to process api responce")
 )
 
 // Client is selectel storage api client
@@ -40,6 +44,7 @@ type Client struct {
 	client      DoClient
 }
 
+// StorageInformation contains some usefull metrics about storage for current user
 type StorageInformation struct {
 	ObjectCount     uint64
 	BytesUsed       uint64
@@ -72,6 +77,7 @@ func (c *Client) setClient(client DoClient) {
 	c.client = client
 }
 
+// DeleteObject removes object from specified container
 func (c *Client) DeleteObject(container, filename string) error {
 	request, err := http.NewRequest("DELETE", c.URL(container, filename), nil)
 	if err != nil {
@@ -93,6 +99,7 @@ func (c *Client) DeleteObject(container, filename string) error {
 	return nil
 }
 
+// Info returns StorageInformation for current user
 func (c *Client) Info() (info StorageInformation) {
 	request, err := http.NewRequest("GET", c.url(), nil)
 	if err != nil {
@@ -123,10 +130,12 @@ func (c *Client) Info() (info StorageInformation) {
 	return
 }
 
+// URL returns url for file in container
 func (c *Client) URL(container, filename string) string {
 	return c.url(container, filename)
 }
 
+// Do performs request with auth token
 func (c *Client) Do(request *http.Request) (res *http.Response, err error) {
 	return c.do(request)
 }
@@ -135,12 +144,12 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 	if request.Header == nil {
 		request.Header = http.Header{}
 	}
-	if request.URL.String() != authUrl && c.Expired() {
+	if request.URL.String() != authURL && c.Expired() {
 		log.Println("[selectel]", "token expired")
 		if err = c.Auth(c.user, c.key); err != nil {
 			return
 		}
-		if err = c.fixUrl(request); err != nil {
+		if err = c.fixURL(request); err != nil {
 			return
 		}
 	}
@@ -159,7 +168,7 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 	return
 }
 
-func (c *Client) fixUrl(request *http.Request) error {
+func (c *Client) fixURL(request *http.Request) error {
 	newRequest, err := http.NewRequest(request.Method, c.url(request.URL.Path), request.Body)
 	log.Println("fixing url", request.URL, "->", newRequest.URL.String())
 	*request = *newRequest
@@ -180,6 +189,7 @@ func New(user, key string) (API, error) {
 	return client, client.Auth(user, key)
 }
 
+// NewAsync returns new api client and lazily performs auth
 func NewAsync(user, key string) API {
 	c := newClient(new(http.Client))
 	if blank(user) || blank(key) {
@@ -196,6 +206,7 @@ func newClient(client *http.Client) *Client {
 	return c
 }
 
+// NewEnv acts as New, but reads credentials from environment
 func NewEnv() (API, error) {
 	user := os.Getenv(EnvUser)
 	key := os.Getenv(EnvKey)

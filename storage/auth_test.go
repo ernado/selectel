@@ -34,8 +34,8 @@ func NewTestClient(callback func(*http.Request) (*http.Response, error)) DoClien
 	return &TestClient{callback: callback}
 }
 
-func (t *TestClient) Do(request *http.Request) (res *http.Response, err error) {
-	res, err = t.callback(request)
+func (c *TestClient) Do(request *http.Request) (res *http.Response, err error) {
+	res, err = c.callback(request)
 	if err == nil && res.Body == nil {
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(nil))
 	}
