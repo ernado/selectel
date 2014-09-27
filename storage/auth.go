@@ -75,7 +75,6 @@ func (c *Client) Expired() bool {
 	if c.expireFrom == nil {
 		return true
 	}
-
 	duration := time.Duration(c.tokenExpire) * time.Second
 	expiredFrom := c.expireFrom.Add(duration).Add(tokenDurationAdd)
 	return expiredFrom.Before(time.Now())

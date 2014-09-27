@@ -15,7 +15,7 @@ func TestContainerMethods(t *testing.T) {
 		resp.Header.Add("X-Auth-Token", "token")
 		resp.Header.Add("X-Storage-Url", "https://xxx.selcdn.ru/")
 		resp.StatusCode = http.StatusNoContent
-		c.setClient(&TestClient{resp, nil})
+		c.setClient(NewTestClientSimple(resp))
 		So(c.Auth("user", "key"), ShouldBeNil)
 		So(c.storageURL.String(), ShouldEqual, "https://xxx.selcdn.ru/")
 		So(c.token, ShouldEqual, "token")

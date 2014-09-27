@@ -15,7 +15,7 @@ func TestMethods(t *testing.T) {
 		resp.Header.Add("X-Auth-Token", "token")
 		resp.Header.Add("X-Storage-Url", "https://xxx.selcdn.ru/")
 		resp.StatusCode = http.StatusNoContent
-		c.setClient(&TestClient{resp, nil})
+		c.setClient(NewTestClientSimple(resp))
 		So(c.Auth("user", "key"), ShouldBeNil)
 		So(c.storageURL.String(), ShouldEqual, "https://xxx.selcdn.ru/")
 		So(c.token, ShouldEqual, "token")
@@ -29,7 +29,7 @@ func TestMethods(t *testing.T) {
 			resp.Header.Add("X-Received-Bytes", "110278989542")
 			resp.Header.Add("X-Transfered-Bytes", "224961419192")
 			resp.StatusCode = http.StatusOK
-			c.setClient(&TestClient{resp, nil})
+			c.setClient(NewTestClientSimple(resp))
 			info := c.Info()
 			So(info.BytesUsed, ShouldEqual, uint64(6427888648))
 			So(info.ObjectCount, ShouldEqual, uint64(5563))

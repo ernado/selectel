@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type File struct {
+type FileInfo struct {
 	Size         uint64    `json:"bytes"`
 	ContentType  string    `json:"content_type"`
 	Downloaded   int       `json:"downloaded"`
