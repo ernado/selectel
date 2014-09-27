@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -58,8 +59,8 @@ func (c *Client) Auth(user, key string) error {
 	if blank(c.token) {
 		return ErrorAuth
 	}
-	c.storageURL = res.Header.Get(storageUrlHeader)
-	if blank(c.storageURL) {
+	c.storageURL, err = url.Parse(res.Header.Get(storageUrlHeader))
+	if err != nil || len(c.storageURL.String()) == 0 {
 		return ErrorAuth
 	}
 

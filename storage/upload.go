@@ -2,12 +2,12 @@ package storage
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
-	// "path/filepath"
+	"path/filepath"
 )
 
 var (
@@ -25,21 +25,22 @@ func (c *Client) UploadFile(filename, container string) error {
 	if err != nil {
 		return err
 	}
-	return c.Upload(f, stats.Size(), container, stats.Name(), "")
+	ext := filepath.Ext(filename)
+	mimetype := mime.TypeByExtension(ext)
+	return c.Upload(f, container, stats.Name(), mimetype)
 }
 
 // Upload reads all data from reader and uploads to contaier with filename and content type
-func (c *Client) Upload(reader io.Reader, length int64, container, filename, t string) error {
+func (c *Client) Upload(reader io.Reader, container, filename, contentType string) error {
 	closer, ok := reader.(io.ReadCloser)
 	if ok {
 		defer closer.Close()
 	}
 
-	urlStr := c.url(fmt.Sprintf("%s/%s", container, filename))
-	request, err := http.NewRequest("PUT", urlStr, reader)
-	if !blank(t) {
+	request, err := http.NewRequest("PUT", c.URL(container, filename), reader)
+	if !blank(contentType) {
 		request.Header = http.Header{}
-		request.Header.Add("Content-Type", t)
+		request.Header.Add("Content-Type", contentType)
 	}
 	if err != nil {
 		return err

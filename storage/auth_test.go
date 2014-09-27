@@ -27,7 +27,7 @@ func TestAuth(t *testing.T) {
 			resp.StatusCode = http.StatusNoContent
 			c.setClient(&TestClient{resp, nil})
 			So(c.Auth("user", "key"), ShouldBeNil)
-			So(c.storageURL, ShouldEqual, "https://xxx.selcdn.ru/")
+			So(c.storageURL.String(), ShouldEqual, "https://xxx.selcdn.ru/")
 			So(c.token, ShouldEqual, "token")
 			So(c.tokenExpire, ShouldEqual, 110)
 		})
