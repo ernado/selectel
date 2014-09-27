@@ -15,6 +15,7 @@ type ContainerAPI interface {
 	Upload(reader io.Reader, filename, contentType string) error
 	UploadFile(filename string) error
 	URL(filename string) string
+	DeleteObject(filename string) error
 }
 
 func (c *Container) Upload(reader io.Reader, filename, contentType string) error {
@@ -33,6 +34,10 @@ func (c *Container) URL(filename string) string {
 
 func (c *Container) UploadFile(filename string) error {
 	return c.api.UploadFile(filename, c.name)
+}
+
+func (c *Container) DeleteObject(filename string) error {
+	return c.api.DeleteObject(c.name, filename)
 }
 
 func (c *Client) C(name string) ContainerAPI {

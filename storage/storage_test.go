@@ -20,6 +20,30 @@ func TestMethods(t *testing.T) {
 		So(c.storageURL.String(), ShouldEqual, "https://xxx.selcdn.ru/")
 		So(c.token, ShouldEqual, "token")
 		So(c.tokenExpire, ShouldEqual, 110)
+		Convey("Delete", func() {
+			resp := new(http.Response)
+			resp.StatusCode = http.StatusNoContent
+			c.setClient(NewTestClientSimple(resp))
+			So(c.DeleteObject("container", "filename"), ShouldBeNil)
+			Convey("Request error", func() {
+				resp := new(http.Response)
+				resp.StatusCode = http.StatusNoContent
+				c.setClient(NewTestClientError(resp, ErrorBadResponce))
+				So(c.DeleteObject("container", "filename"), ShouldNotBeNil)
+			})
+			Convey("Not found", func() {
+				resp := new(http.Response)
+				resp.StatusCode = http.StatusNotFound
+				c.setClient(NewTestClientSimple(resp))
+				So(c.DeleteObject("container", "filename"), ShouldEqual, ErrorObjectNotFound)
+			})
+			Convey("Bad responce", func() {
+				resp := new(http.Response)
+				resp.StatusCode = http.StatusConflict
+				c.setClient(NewTestClientError(resp, ErrorBadResponce))
+				So(c.DeleteObject("container", "filename"), ShouldEqual, ErrorBadResponce)
+			})
+		})
 		Convey("Info", func() {
 			resp := new(http.Response)
 			resp.Header = http.Header{}

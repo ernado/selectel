@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -21,6 +22,11 @@ const (
 	transferedBytesHeader = "X-Transfered-Bytes"
 	EnvUser               = "SELECTEL_USER"
 	EnvKey                = "SELECTEL_KEY"
+)
+
+var (
+	ErrorObjectNotFound = errors.New("Object not found")
+	ErrorBadResponce    = errors.New("Unable to process api responce")
 )
 
 // Client is selectel storage api client
@@ -52,6 +58,7 @@ type API interface {
 	Token() string
 	C(string) ContainerAPI
 	Container(string) ContainerAPI
+	DeleteObject(container, filename string) error
 	URL(container, filename string) string
 }
 
@@ -63,6 +70,27 @@ type DoClient interface {
 // setClient sets client
 func (c *Client) setClient(client DoClient) {
 	c.client = client
+}
+
+func (c *Client) DeleteObject(container, filename string) error {
+	request, err := http.NewRequest("DELETE", c.URL(container, filename), nil)
+	if err != nil {
+		return err
+	}
+	res, err := c.Do(request)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode == http.StatusNotFound {
+		return ErrorObjectNotFound
+	}
+	if res.StatusCode == http.StatusUnauthorized {
+		return ErrorAuth
+	}
+	if res.StatusCode != http.StatusNoContent {
+		return ErrorBadResponce
+	}
+	return nil
 }
 
 func (c *Client) Info() (info StorageInformation) {
