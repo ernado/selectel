@@ -48,6 +48,17 @@ func TestIntegration(t *testing.T) {
 			So(func() {
 				NewAsync(user, "")
 			}, ShouldPanic)
+			Convey("Error", func() {
+				c := NewAsync(randString(10), randString(10))
+				uploadData := randData(512)
+				f, err := ioutil.TempFile("", randString(12))
+				defer f.Close()
+				f.Write(uploadData)
+				So(err, ShouldBeNil)
+				filename := f.Name()
+				container := "test"
+				So(c.UploadFile(filename, container), ShouldEqual, ErrorAuth)
+			})
 		})
 		Convey("Info", func() {
 			info := c.Info()
