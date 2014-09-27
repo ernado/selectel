@@ -63,14 +63,11 @@ func TestIntegration(t *testing.T) {
 			})
 		})
 	}
-	if len(os.Getenv(EnvKey)) == 0 || len(os.Getenv(EnvUser)) == 0 {
-		test = nil
-	}
 	name := "Integration"
-	if test != nil {
-		Convey(name, t, test)
-	} else {
+	if len(os.Getenv(EnvKey)) == 0 || len(os.Getenv(EnvUser)) == 0 {
 		log.Println("Credentials not provided. Skipping integration tests")
 		Convey(name, t, nil)
+	} else {
+		Convey(name, t, test)
 	}
 }
