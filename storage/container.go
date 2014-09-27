@@ -9,6 +9,7 @@ type Container struct {
 	api  API
 }
 
+// ContainerAPI is interface for selectel storage container
 type ContainerAPI interface {
 	Name() string
 	Upload(reader io.Reader, filename, contentType string) error
@@ -20,10 +21,12 @@ func (c *Container) Upload(reader io.Reader, filename, contentType string) error
 	return c.api.Upload(reader, c.name, filename, contentType)
 }
 
+// Name returns container name
 func (c *Container) Name() string {
 	return c.name
 }
 
+// URL returns url for object
 func (c *Container) URL(filename string) string {
 	return c.api.URL(c.name, filename)
 }

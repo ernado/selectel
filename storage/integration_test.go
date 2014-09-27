@@ -31,6 +31,24 @@ func TestIntegration(t *testing.T) {
 		c, err := NewEnv()
 		So(err, ShouldBeNil)
 		So(c, ShouldNotBeNil)
+		Convey("Async", func() {
+			user := os.Getenv(EnvUser)
+			key := os.Getenv(EnvKey)
+			c := NewAsync(user, key)
+			info := c.Info()
+			So(info.BytesUsed, ShouldNotEqual, 0)
+			So(info.ObjectCount, ShouldNotEqual, 0)
+			So(info.ContainerCount, ShouldNotEqual, 0)
+			So(func() {
+				NewAsync("", key)
+			}, ShouldPanic)
+			So(func() {
+				NewAsync("", "")
+			}, ShouldPanic)
+			So(func() {
+				NewAsync(user, "")
+			}, ShouldPanic)
+		})
 		Convey("Info", func() {
 			info := c.Info()
 			So(info.BytesUsed, ShouldNotEqual, 0)

@@ -108,6 +108,7 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 		request.Header = http.Header{}
 	}
 	if request.URL.String() != authUrl && c.Expired() {
+		log.Println("[selectel]", "token expired")
 		if err = c.Auth(c.user, c.key); err != nil {
 			return
 		}
@@ -132,12 +133,17 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 
 func (c *Client) fixUrl(request *http.Request) error {
 	newRequest, err := http.NewRequest(request.Method, c.url(request.URL.Path), request.Body)
+	log.Println("fixing url", request.URL, "->", newRequest.URL.String())
 	*request = *newRequest
 	return err
 }
 
 func (c *Client) url(postfix ...string) string {
-	return fmt.Sprintf("%s%s", c.storageURL, strings.Join(postfix, "/"))
+	path := strings.Join(postfix, "/")
+	if c.storageURL == nil {
+		return path
+	}
+	return fmt.Sprintf("%s%s", c.storageURL, path)
 }
 
 // New returns new selectel storage api client

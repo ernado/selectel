@@ -58,6 +58,9 @@ func TestUpload(t *testing.T) {
 			}
 			c.setClient(NewTestClient(callback))
 			So(c.UploadFile(filename, container), ShouldBeNil)
+			Convey("IO error", func() {
+				So(c.UploadFile(randString(100), "container"), ShouldNotBeNil)
+			})
 		})
 		Convey("404", func() {
 			data := bytes.NewBufferString("data")

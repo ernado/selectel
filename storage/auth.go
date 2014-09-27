@@ -35,10 +35,7 @@ func (c *Client) Auth(user, key string) error {
 		return ErrorBadCredentials
 	}
 
-	request, err := http.NewRequest("GET", authUrl, nil)
-	if err != nil {
-		return err
-	}
+	request, _ := http.NewRequest("GET", authUrl, nil)
 	request.Header.Add(authUserHeader, user)
 	request.Header.Add(authKeyHeader, key)
 
