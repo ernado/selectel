@@ -46,6 +46,8 @@ func (c *Client) Auth(user, key string) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
+
 	if res.StatusCode != http.StatusNoContent {
 		return ErrorAuth
 	}

@@ -50,6 +50,7 @@ func (c *Client) Upload(reader io.Reader, container, filename, contentType strin
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
 		log.Printf("Bad status %s", res.Status)

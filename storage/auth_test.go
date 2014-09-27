@@ -1,41 +1,45 @@
 package storage
 
 import (
+	"bytes"
 	. "github.com/smartystreets/goconvey/convey"
+	"io/ioutil"
 	"net/http"
 	"testing"
 )
 
 type TestClient struct {
-	response *http.Response
 	callback func(*http.Request) (*http.Response, error)
-	err      error
+}
+
+func (c *TestClient) simpleCallback(res *http.Response, err error) func(*http.Request) (*http.Response, error) {
+	return func(_ *http.Request) (*http.Response, error) {
+		return res, err
+	}
 }
 
 func NewTestClientSimple(res *http.Response) doClient {
 	c := new(TestClient)
-	c.response = res
+	c.callback = c.simpleCallback(res, nil)
 	return c
 }
 
 func NewTestClientError(res *http.Response, err error) doClient {
 	c := new(TestClient)
-	c.response = res
-	c.err = err
+	c.callback = c.simpleCallback(res, err)
 	return c
 }
 
 func NewTestClient(callback func(*http.Request) (*http.Response, error)) doClient {
-	c := new(TestClient)
-	c.callback = callback
-	return c
+	return &TestClient{callback: callback}
 }
 
-func (t *TestClient) Do(request *http.Request) (*http.Response, error) {
-	if t.callback != nil {
-		return t.callback(request)
+func (t *TestClient) Do(request *http.Request) (res *http.Response, err error) {
+	res, err = t.callback(request)
+	if err == nil && res.Body == nil {
+		res.Body = ioutil.NopCloser(bytes.NewBuffer(nil))
 	}
-	return t.response, t.err
+	return res, err
 }
 
 func TestAuth(t *testing.T) {
