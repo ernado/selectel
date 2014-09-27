@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,8 @@ const (
 	containerCountHeader  = "X-Account-Container-Count"
 	recievedBytesHeader   = "X-Received-Bytes"
 	transferedBytesHeader = "X-Transfered-Bytes"
+	EnvUser               = "SELECTEL_USER"
+	EnvKey                = "SELECTEL_KEY"
 )
 
 // Client is selectel storage api client
@@ -28,7 +31,7 @@ type Client struct {
 	expireFrom  *time.Time
 	user        string
 	key         string
-	client      doClient
+	client      DoClient
 }
 
 type StorageInformation struct {
@@ -41,6 +44,7 @@ type StorageInformation struct {
 
 // API for selectel storage
 type API interface {
+	DoClient
 	Info() StorageInformation
 	Upload(reader io.Reader, container, filename, t string) error
 	UploadFile(filename, container string) error
@@ -51,13 +55,13 @@ type API interface {
 	URL(container, filename string) string
 }
 
-// doClient is mock of http.Client
-type doClient interface {
+// DoClient is mock of http.Client
+type DoClient interface {
 	Do(request *http.Request) (*http.Response, error)
 }
 
 // setClient sets client
-func (c *Client) setClient(client doClient) {
+func (c *Client) setClient(client DoClient) {
 	c.client = client
 }
 
@@ -93,6 +97,10 @@ func (c *Client) Info() (info StorageInformation) {
 
 func (c *Client) URL(container, filename string) string {
 	return c.url(container, filename)
+}
+
+func (c *Client) Do(request *http.Request) (res *http.Response, err error) {
+	return c.do(request)
 }
 
 func (c *Client) do(request *http.Request) (res *http.Response, err error) {
@@ -152,6 +160,12 @@ func newClient(client *http.Client) *Client {
 	c := new(Client)
 	c.client = client
 	return c
+}
+
+func NewEnv() (API, error) {
+	user := os.Getenv(EnvUser)
+	key := os.Getenv(EnvKey)
+	return New(user, key)
 }
 
 func blank(s string) bool {

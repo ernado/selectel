@@ -18,19 +18,19 @@ func (c *TestClient) simpleCallback(res *http.Response, err error) func(*http.Re
 	}
 }
 
-func NewTestClientSimple(res *http.Response) doClient {
+func NewTestClientSimple(res *http.Response) DoClient {
 	c := new(TestClient)
 	c.callback = c.simpleCallback(res, nil)
 	return c
 }
 
-func NewTestClientError(res *http.Response, err error) doClient {
+func NewTestClientError(res *http.Response, err error) DoClient {
 	c := new(TestClient)
 	c.callback = c.simpleCallback(res, err)
 	return c
 }
 
-func NewTestClient(callback func(*http.Request) (*http.Response, error)) doClient {
+func NewTestClient(callback func(*http.Request) (*http.Response, error)) DoClient {
 	return &TestClient{callback: callback}
 }
 
