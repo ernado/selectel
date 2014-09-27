@@ -1,8 +1,7 @@
-package integration
+package storage
 
 import (
 	"crypto/rand"
-	"github.com/ernado/selectel/storage"
 	. "github.com/smartystreets/goconvey/convey"
 	"io/ioutil"
 	"log"
