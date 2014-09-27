@@ -38,12 +38,12 @@ func (c *Client) Upload(reader io.Reader, container, filename, contentType strin
 	}
 
 	request, err := http.NewRequest("PUT", c.URL(container, filename), reader)
+	if err != nil {
+		return err
+	}
 	if !blank(contentType) {
 		request.Header = http.Header{}
 		request.Header.Add("Content-Type", contentType)
-	}
-	if err != nil {
-		return err
 	}
 
 	res, err := c.do(request)
