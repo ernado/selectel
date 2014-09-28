@@ -60,6 +60,11 @@ func TestMethods(t *testing.T) {
 			So(info.ContainerCount, ShouldEqual, uint64(27))
 			So(info.RecievedBytes, ShouldEqual, uint64(110278989542))
 			So(info.TransferedBytes, ShouldEqual, uint64(224961419192))
+			Convey("Error", func() {
+				c.setClient(NewTestClientError(nil, ErrorAuth))
+				info := c.Info()
+				So(info.ObjectCount, ShouldEqual, uint64(0))
+			})
 		})
 		Convey("Url", func() {
 			So(c.url(), ShouldEqual, "https://xxx.selcdn.ru/")

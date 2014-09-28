@@ -81,10 +81,7 @@ func (c *Client) setClient(client DoClient) {
 
 // DeleteObject removes object from specified container
 func (c *Client) DeleteObject(container, filename string) error {
-	request, err := http.NewRequest("DELETE", c.URL(container, filename), nil)
-	if err != nil {
-		return err
-	}
+	request, _ := http.NewRequest("DELETE", c.URL(container, filename), nil)
 	res, err := c.Do(request)
 	if err != nil {
 		return err
@@ -92,22 +89,15 @@ func (c *Client) DeleteObject(container, filename string) error {
 	if res.StatusCode == http.StatusNotFound {
 		return ErrorObjectNotFound
 	}
-	if res.StatusCode == http.StatusUnauthorized {
-		return ErrorAuth
+	if res.StatusCode == http.StatusNoContent {
+		return nil
 	}
-	if res.StatusCode != http.StatusNoContent {
-		return ErrorBadResponce
-	}
-	return nil
+	return ErrorBadResponce
 }
 
 // Info returns StorageInformation for current user
 func (c *Client) Info() (info StorageInformation) {
-	request, err := http.NewRequest("GET", c.url(), nil)
-	if err != nil {
-		return
-	}
-
+	request, _ := http.NewRequest("GET", c.url(), nil)
 	res, err := c.do(request)
 	if err != nil {
 		return
@@ -151,9 +141,7 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 		if err = c.Auth(c.user, c.key); err != nil {
 			return
 		}
-		if err = c.fixURL(request); err != nil {
-			return
-		}
+		c.fixURL(request)
 	}
 	if !blank(c.token) {
 		request.Header.Add(authTokenHeader, c.token)

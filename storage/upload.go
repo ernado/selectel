@@ -3,7 +3,6 @@ package storage
 import (
 	"errors"
 	"io"
-	"log"
 	"mime"
 	"net/http"
 	"os"
@@ -37,10 +36,7 @@ func (c *Client) Upload(reader io.Reader, container, filename, contentType strin
 		defer closer.Close()
 	}
 
-	request, err := http.NewRequest("PUT", c.URL(container, filename), reader)
-	if err != nil {
-		return err
-	}
+	request, _ := http.NewRequest("PUT", c.URL(container, filename), reader)
 	if !blank(contentType) {
 		request.Header = http.Header{}
 		request.Header.Add("Content-Type", contentType)
@@ -53,8 +49,7 @@ func (c *Client) Upload(reader io.Reader, container, filename, contentType strin
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
-		log.Printf("Bad status %s", res.Status)
-		return ErrorUnableUpload
+		return ErrorBadResponce
 	}
 
 	return nil

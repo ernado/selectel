@@ -13,6 +13,10 @@ import (
 func TestContainerMethods(t *testing.T) {
 	c := newClient(nil)
 	Convey("Methods", t, func() {
+		Convey("Expired", func() {
+			c := newClient(nil)
+			So(c.Expired(), ShouldBeTrue)
+		})
 		resp := new(http.Response)
 		resp.Header = http.Header{}
 		resp.Header.Add("X-Expire-Auth-Token", "110")
@@ -45,6 +49,48 @@ func TestContainerMethods(t *testing.T) {
 			}
 			c.setClient(NewTestClient(callback))
 			So(c.Container("container").Upload(data, "filename", "text/plain"), ShouldBeNil)
+		})
+		Convey("Delete object", func() {
+			Convey("Ok", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(err, ShouldBeNil)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+					So(request.Method, ShouldEqual, "DELETE")
+					resp.StatusCode = http.StatusNoContent
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				So(c.Container("container").DeleteObject("filename"), ShouldBeNil)
+			})
+			Convey("Auth", func() {
+				c.setClient(NewTestClientError(nil, ErrorAuth))
+				So(c.Container("c").DeleteObject("f"), ShouldEqual, ErrorAuth)
+			})
+			Convey("Not found", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(err, ShouldBeNil)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+					So(request.Method, ShouldEqual, "DELETE")
+					resp.StatusCode = http.StatusNotFound
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				So(c.Container("container").DeleteObject("filename"), ShouldEqual, ErrorObjectNotFound)
+			})
+			Convey("Bad responce", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(err, ShouldBeNil)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+					So(request.Method, ShouldEqual, "DELETE")
+					resp.StatusCode = http.StatusTeapot
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				So(c.Container("container").DeleteObject("filename"), ShouldEqual, ErrorBadResponce)
+			})
 		})
 		Convey("Remove", func() {
 			Convey("Ok", func() {
@@ -164,6 +210,10 @@ func TestContainerMethods(t *testing.T) {
 					}
 					c.setClient(NewTestClient(callback))
 					So(c.Container("container").Create(false), ShouldBeNil)
+				})
+				Convey("Auth error", func() {
+					c.setClient(NewTestClientError(nil, ErrorAuth))
+					So(c.Container("container").Create(false), ShouldEqual, ErrorAuth)
 				})
 			})
 			Convey("Auth error", func() {
