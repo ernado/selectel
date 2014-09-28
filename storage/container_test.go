@@ -46,6 +46,147 @@ func TestContainerMethods(t *testing.T) {
 			c.setClient(NewTestClient(callback))
 			So(c.Container("container").Upload(data, "filename", "text/plain"), ShouldBeNil)
 		})
+		Convey("Remove", func() {
+			Convey("Ok", func() {
+				name := randString(10)
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/"+name)
+					So(request.Method, ShouldEqual, "DELETE")
+					resp.StatusCode = http.StatusNoContent
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				So(c.RemoveContainer(name), ShouldBeNil)
+				So(c.Container(name).Remove(), ShouldBeNil)
+			})
+			Convey("Not empty", func() {
+				name := randString(10)
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/"+name)
+					So(request.Method, ShouldEqual, "DELETE")
+					resp.StatusCode = http.StatusConflict
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				So(c.RemoveContainer(name), ShouldEqual, ErrorConianerNotEmpty)
+				So(c.Container(name).Remove(), ShouldEqual, ErrorConianerNotEmpty)
+			})
+			Convey("Bad responce", func() {
+				name := randString(10)
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/"+name)
+					So(request.Method, ShouldEqual, "DELETE")
+					resp.StatusCode = http.StatusForbidden
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				So(c.RemoveContainer(name), ShouldEqual, ErrorBadResponce)
+				So(c.Container(name).Remove(), ShouldEqual, ErrorBadResponce)
+			})
+			Convey("Not found", func() {
+				name := randString(10)
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/"+name)
+					So(request.Method, ShouldEqual, "DELETE")
+					resp.StatusCode = http.StatusNotFound
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				So(c.RemoveContainer(name), ShouldEqual, ErrorObjectNotFound)
+				So(c.Container(name).Remove(), ShouldEqual, ErrorObjectNotFound)
+			})
+			Convey("Auth", func() {
+				name := randString(10)
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/"+name)
+					So(request.Method, ShouldEqual, "DELETE")
+					resp.StatusCode = http.StatusUnauthorized
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				So(c.RemoveContainer(name), ShouldEqual, ErrorAuth)
+				So(c.Container(name).Remove(), ShouldEqual, ErrorAuth)
+			})
+		})
+		Convey("Create", func() {
+			Convey("Bad responce", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container")
+					So(request.Method, ShouldEqual, "PUT")
+					resp.StatusCode = http.StatusForbidden
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				container, err := c.CreateContainer("container", false)
+				So(err, ShouldEqual, ErrorBadResponce)
+				So(container, ShouldBeNil)
+			})
+			Convey("Already exists", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container")
+					So(request.Method, ShouldEqual, "PUT")
+					resp.StatusCode = http.StatusAccepted
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				container, err := c.CreateContainer("container", false)
+				So(err, ShouldBeNil)
+				So(container.Name(), ShouldEqual, "container")
+			})
+			Convey("Ok", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container")
+					So(request.Method, ShouldEqual, "PUT")
+					resp.StatusCode = http.StatusCreated
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				container, err := c.CreateContainer("container", false)
+				So(err, ShouldBeNil)
+				So(container.Name(), ShouldEqual, "container")
+			})
+			Convey("Shortcut", func() {
+				Convey("Ok", func() {
+					callback := func(request *http.Request) (resp *http.Response, err error) {
+						resp = new(http.Response)
+						So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container")
+						So(request.Method, ShouldEqual, "PUT")
+						resp.StatusCode = http.StatusCreated
+						return
+					}
+					c.setClient(NewTestClient(callback))
+					So(c.Container("container").Create(false), ShouldBeNil)
+				})
+			})
+			Convey("Auth error", func() {
+				c.setClient(NewTestClientError(nil, ErrorAuth))
+				container, err := c.CreateContainer("container", false)
+				So(err, ShouldEqual, ErrorAuth)
+				So(container, ShouldBeNil)
+			})
+			Convey("Private", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container")
+					So(request.Method, ShouldEqual, "PUT")
+					resp.StatusCode = http.StatusCreated
+					So(request.Header.Get(containerMetaTypeHeader), ShouldEqual, "private")
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				container, err := c.CreateContainer("container", true)
+				So(err, ShouldBeNil)
+				So(container.Name(), ShouldEqual, "container")
+			})
+		})
 		Convey("File upload", func() {
 			f, err := ioutil.TempFile("", "data")
 			defer f.Close()

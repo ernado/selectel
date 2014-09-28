@@ -2,6 +2,7 @@ package storage
 
 import (
 	"crypto/rand"
+	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"io/ioutil"
 	"log"
@@ -102,6 +103,57 @@ func TestIntegration(t *testing.T) {
 			})
 		})
 		Convey("Container", func() {
+			Convey("Create", func() {
+				name := fmt.Sprintf("test_%s", randString(30))
+				So(c.Container(name).Create(false), ShouldBeNil)
+				Convey("Already exists", func() {
+					So(c.Container(name).Create(false), ShouldBeNil)
+				})
+				Convey("Upload", func() {
+					uploadData := randData(512)
+					f, err := ioutil.TempFile("", randString(12))
+					defer f.Close()
+					f.Write(uploadData)
+					So(err, ShouldBeNil)
+					filename := f.Name()
+					basename := filepath.Base(filename)
+					container := c.Container(name)
+					So(container.UploadFile(filename), ShouldBeNil)
+					Convey("Remove container", func() {
+						So(c.Container(name).Remove(), ShouldEqual, ErrorConianerNotEmpty)
+					})
+					Convey("Download", func() {
+						link := c.URL(container.Name(), basename)
+						req, err := http.NewRequest("GET", link, nil)
+						So(err, ShouldBeNil)
+						res, err := c.Do(req)
+						So(err, ShouldBeNil)
+						So(res.StatusCode, ShouldEqual, http.StatusOK)
+						defer res.Body.Close()
+						data, err := ioutil.ReadAll(res.Body)
+						So(err, ShouldBeNil)
+						So(string(data), ShouldEqual, string(uploadData))
+						So(reflect.DeepEqual(data, uploadData), ShouldBeTrue)
+						Convey("Delete", func() {
+							So(container.DeleteObject(basename), ShouldBeNil)
+							Convey("Remove container", func() {
+								So(c.Container(name).Remove(), ShouldBeNil)
+							})
+							Convey("Not found", func() {
+								link := c.URL(container.Name(), basename)
+								req, err := http.NewRequest("GET", link, nil)
+								So(err, ShouldBeNil)
+								res, err := c.Do(req)
+								So(err, ShouldBeNil)
+								So(res.StatusCode, ShouldEqual, http.StatusNotFound)
+							})
+						})
+					})
+				})
+				Convey("Remove", func() {
+					So(c.Container(name).Remove(), ShouldBeNil)
+				})
+			})
 			Convey("Upload", func() {
 				uploadData := randData(512)
 				f, err := ioutil.TempFile("", randString(12))

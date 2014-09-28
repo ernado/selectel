@@ -65,6 +65,8 @@ type API interface {
 	Container(string) ContainerAPI
 	DeleteObject(container, filename string) error
 	URL(container, filename string) string
+	CreateContainer(name string, private bool) (ContainerAPI, error)
+	RemoveContainer(name string) error
 }
 
 // DoClient is mock of http.Client
@@ -165,6 +167,9 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 		return
 	}
 	log.Println(request.Method, request.URL.String(), res.StatusCode, duration)
+	if res.StatusCode == http.StatusUnauthorized {
+		return nil, ErrorAuth
+	}
 	return
 }
 
