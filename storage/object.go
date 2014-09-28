@@ -103,3 +103,7 @@ func (o *Object) GetReader() (io.ReadCloser, error) {
 	}
 	return res.Body, nil
 }
+
+func (o *Object) Remove() error {
+	return o.container.RemoveObject(o.name)
+}

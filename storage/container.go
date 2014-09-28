@@ -27,16 +27,18 @@ type Container struct {
 // ContainerAPI is interface for selectel storage container
 type ContainerAPI interface {
 	Name() string
-	Upload(reader io.Reader, filename, contentType string) error
+	Upload(reader io.Reader, name, contentType string) error
 	UploadFile(filename string) error
 	URL(filename string) string
-	DeleteObject(filename string) error
+	RemoveObject(name string) error
 	// Remove removes current container
 	Remove() error
 	// Create creates current container
 	Create(bool) error
 	// ObjectInfo returns info about object in container
 	ObjectInfo(name string) (ObjectInfo, error)
+	// Object returns object from container
+	Object(name string) ObjectAPI
 }
 
 // Upload reads all data from reader and uploads to contaier with filename and content type
@@ -76,12 +78,20 @@ func (c *Container) UploadFile(filename string) error {
 }
 
 // DeleteObject is shortcut to API.DeleteObject
-func (c *Container) DeleteObject(filename string) error {
-	return c.api.DeleteObject(c.name, filename)
+func (c *Container) RemoveObject(filename string) error {
+	return c.api.RemoveObject(c.name, filename)
 }
 
 func (c *Container) ObjectInfo(name string) (ObjectInfo, error) {
 	return c.api.ObjectInfo(c.name, name)
+}
+
+func (c *Container) Object(name string) ObjectAPI {
+	object := new(Object)
+	object.api = c.api
+	object.container = c
+	object.name = name
+	return object
 }
 
 // C is shortcut to Client.Container

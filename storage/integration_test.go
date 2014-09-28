@@ -87,6 +87,21 @@ func TestIntegration(t *testing.T) {
 				So(info.Hash, ShouldEqual, hash)
 				So(info.Downloaded, ShouldEqual, 0)
 			})
+			Convey("Download shortcut", func() {
+				reader, err := c.Container(container).Object(basename).GetReader()
+				So(err, ShouldBeNil)
+				data, err := ioutil.ReadAll(reader)
+				So(err, ShouldBeNil)
+				So(string(data), ShouldEqual, string(uploadData))
+				So(reflect.DeepEqual(data, uploadData), ShouldBeTrue)
+				Convey("Remove", func() {
+					So(c.Container(container).Object(basename).Remove(), ShouldBeNil)
+					Convey("Not found", func() {
+						_, err := c.Container(container).Object(basename).GetReader()
+						So(err, ShouldEqual, ErrorObjectNotFound)
+					})
+				})
+			})
 			Convey("Download", func() {
 				link := c.URL(container, basename)
 				req, err := http.NewRequest("GET", link, nil)
@@ -99,8 +114,8 @@ func TestIntegration(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(string(data), ShouldEqual, string(uploadData))
 				So(reflect.DeepEqual(data, uploadData), ShouldBeTrue)
-				Convey("Delete", func() {
-					So(c.DeleteObject(container, basename), ShouldBeNil)
+				Convey("Remove", func() {
+					So(c.RemoveObject(container, basename), ShouldBeNil)
 					Convey("Not found", func() {
 						link := c.URL(container, basename)
 						req, err := http.NewRequest("GET", link, nil)
@@ -148,8 +163,8 @@ func TestIntegration(t *testing.T) {
 						So(err, ShouldBeNil)
 						So(string(data), ShouldEqual, string(uploadData))
 						So(reflect.DeepEqual(data, uploadData), ShouldBeTrue)
-						Convey("Delete", func() {
-							So(container.DeleteObject(basename), ShouldBeNil)
+						Convey("Remove", func() {
+							So(container.RemoveObject(basename), ShouldBeNil)
 							Convey("Remove container", func() {
 								So(c.Container(name).Remove(), ShouldBeNil)
 							})
@@ -190,8 +205,8 @@ func TestIntegration(t *testing.T) {
 					So(err, ShouldBeNil)
 					So(string(data), ShouldEqual, string(uploadData))
 					So(reflect.DeepEqual(data, uploadData), ShouldBeTrue)
-					Convey("Delete", func() {
-						So(container.DeleteObject(basename), ShouldBeNil)
+					Convey("Remove", func() {
+						So(container.RemoveObject(basename), ShouldBeNil)
 						Convey("Not found", func() {
 							link := c.URL(container.Name(), basename)
 							req, err := http.NewRequest("GET", link, nil)

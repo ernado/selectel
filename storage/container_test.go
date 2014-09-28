@@ -61,11 +61,12 @@ func TestContainerMethods(t *testing.T) {
 					return
 				}
 				c.setClient(NewTestClient(callback))
-				So(c.Container("container").DeleteObject("filename"), ShouldBeNil)
+				So(c.Container("container").RemoveObject("filename"), ShouldBeNil)
+				So(c.Container("container").Object("filename").Remove(), ShouldBeNil)
 			})
 			Convey("Auth", func() {
 				c.setClient(NewTestClientError(nil, ErrorAuth))
-				So(c.Container("c").DeleteObject("f"), ShouldEqual, ErrorAuth)
+				So(c.Container("c").RemoveObject("f"), ShouldEqual, ErrorAuth)
 			})
 			Convey("Not found", func() {
 				callback := func(request *http.Request) (resp *http.Response, err error) {
@@ -77,7 +78,8 @@ func TestContainerMethods(t *testing.T) {
 					return
 				}
 				c.setClient(NewTestClient(callback))
-				So(c.Container("container").DeleteObject("filename"), ShouldEqual, ErrorObjectNotFound)
+				So(c.Container("container").RemoveObject("filename"), ShouldEqual, ErrorObjectNotFound)
+				So(c.Container("container").Object("filename").Remove(), ShouldEqual, ErrorObjectNotFound)
 			})
 			Convey("Bad responce", func() {
 				callback := func(request *http.Request) (resp *http.Response, err error) {
@@ -89,7 +91,7 @@ func TestContainerMethods(t *testing.T) {
 					return
 				}
 				c.setClient(NewTestClient(callback))
-				So(c.Container("container").DeleteObject("filename"), ShouldEqual, ErrorBadResponce)
+				So(c.Container("container").RemoveObject("filename"), ShouldEqual, ErrorBadResponce)
 			})
 		})
 		Convey("Remove", func() {

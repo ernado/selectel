@@ -70,7 +70,7 @@ type API interface {
 	Token() string
 	C(string) ContainerAPI
 	Container(string) ContainerAPI
-	DeleteObject(container, filename string) error
+	RemoveObject(container, filename string) error
 	URL(container, filename string) string
 	CreateContainer(name string, private bool) (ContainerAPI, error)
 	RemoveContainer(name string) error
@@ -89,7 +89,7 @@ func (c *Client) setClient(client DoClient) {
 }
 
 // DeleteObject removes object from specified container
-func (c *Client) DeleteObject(container, filename string) error {
+func (c *Client) RemoveObject(container, filename string) error {
 	request, _ := http.NewRequest(deleteMethod, c.URL(container, filename), nil)
 	res, err := c.Do(request)
 	if err != nil {

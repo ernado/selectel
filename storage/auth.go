@@ -14,6 +14,8 @@ const (
 	authKeyHeader    = "X-Auth-Key"
 	authExpireHeader = "X-Expire-Auth-Token"
 	storageURLHeader = "X-Storage-Url"
+	// tokenDurationAdd used to reduce duration of token
+	// to re-auth before token gets expired
 	tokenDurationAdd = 10 * time.Second
 )
 

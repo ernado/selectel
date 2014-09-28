@@ -36,7 +36,12 @@ func TestUpload(t *testing.T) {
 				return
 			}
 			c.setClient(NewTestClient(callback))
-			So(c.Upload(data, "container", "filename", "text/plain"), ShouldBeNil)
+			Convey("Direct", func() {
+				So(c.Upload(data, "container", "filename", "text/plain"), ShouldBeNil)
+			})
+			Convey("Shortcut", func() {
+				So(c.Container("container").Object("filename").Upload(data, "text/plain"), ShouldBeNil)
+			})
 		})
 		Convey("File upload", func() {
 			f, err := ioutil.TempFile("", "data")
@@ -57,7 +62,12 @@ func TestUpload(t *testing.T) {
 				return
 			}
 			c.setClient(NewTestClient(callback))
-			So(c.UploadFile(filename, container), ShouldBeNil)
+			Convey("Direct", func() {
+				So(c.UploadFile(filename, container), ShouldBeNil)
+			})
+			Convey("Shortcut", func() {
+				So(c.Container("container").Object(basename).UploadFile(filename), ShouldBeNil)
+			})
 			Convey("IO error", func() {
 				So(c.UploadFile(randString(100), "container"), ShouldNotBeNil)
 			})
