@@ -109,6 +109,10 @@ func TestIntegration(t *testing.T) {
 						So(err, ShouldBeNil)
 						So(res.StatusCode, ShouldEqual, http.StatusNotFound)
 					})
+					Convey("File info", func() {
+						_, err := c.ObjectInfo(container, basename)
+						So(err, ShouldEqual, ErrorObjectNotFound)
+					})
 				})
 			})
 		})
