@@ -95,7 +95,7 @@ func (c *Client) Container(name string) ContainerAPI {
 // CreateContainer creates new container and retuns it.
 // If container already exists, function will return existing container
 func (c *Client) CreateContainer(name string, private bool) (ContainerAPI, error) {
-	req, _ := http.NewRequest("PUT", c.url(name), nil)
+	req, _ := http.NewRequest(putMethod, c.url(name), nil)
 	req.Header = http.Header{}
 	containerType := containerPublic
 	if private {
@@ -116,7 +116,7 @@ func (c *Client) CreateContainer(name string, private bool) (ContainerAPI, error
 // RemoveContainer removes container with provided name
 // Container should be empty before removing and must exist
 func (c *Client) RemoveContainer(name string) error {
-	req, _ := http.NewRequest("DELETE", c.url(name), nil)
+	req, _ := http.NewRequest(deleteMethod, c.url(name), nil)
 	res, err := c.Do(req)
 	if err != nil {
 		return err

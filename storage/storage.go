@@ -14,12 +14,19 @@ import (
 )
 
 const (
+	headMethod            = "HEAD"
+	getMethod             = "GET"
+	postMethod            = "POST"
+	putMethod             = "PUT"
+	deleteMethod          = "DELETE"
 	authTokenHeader       = "X-Auth-Token"
 	objectCountHeader     = "X-Account-Object-Count"
 	bytesUsedHeader       = "X-Account-Bytes-Used"
 	containerCountHeader  = "X-Account-Container-Count"
 	recievedBytesHeader   = "X-Received-Bytes"
 	transferedBytesHeader = "X-Transfered-Bytes"
+	uint64BitSize         = 64
+	uint64Base            = 10
 	// EnvUser is environmental variable for selectel api username
 	EnvUser = "SELECTEL_USER"
 	// EnvKey is environmental variable for selectel api key
@@ -67,6 +74,8 @@ type API interface {
 	URL(container, filename string) string
 	CreateContainer(name string, private bool) (ContainerAPI, error)
 	RemoveContainer(name string) error
+	// ObjectInfo returns information about object in container
+	ObjectInfo(container, filename string) (f ObjectInfo, err error)
 }
 
 // DoClient is mock of http.Client
@@ -81,7 +90,7 @@ func (c *Client) setClient(client DoClient) {
 
 // DeleteObject removes object from specified container
 func (c *Client) DeleteObject(container, filename string) error {
-	request, _ := http.NewRequest("DELETE", c.URL(container, filename), nil)
+	request, _ := http.NewRequest(deleteMethod, c.URL(container, filename), nil)
 	res, err := c.Do(request)
 	if err != nil {
 		return err
@@ -97,28 +106,20 @@ func (c *Client) DeleteObject(container, filename string) error {
 
 // Info returns StorageInformation for current user
 func (c *Client) Info() (info StorageInformation) {
-	request, _ := http.NewRequest("GET", c.url(), nil)
+	request, _ := http.NewRequest(getMethod, c.url(), nil)
 	res, err := c.do(request)
 	if err != nil {
 		return
 	}
-
-	var (
-		bitSize = 64
-		base    = 10
-	)
-
 	parse := func(key string) uint64 {
-		v, _ := strconv.ParseUint(res.Header.Get(key), base, bitSize)
+		v, _ := strconv.ParseUint(res.Header.Get(key), uint64Base, uint64BitSize)
 		return v
 	}
-
 	info.BytesUsed = parse(bytesUsedHeader)
 	info.ObjectCount = parse(objectCountHeader)
 	info.ContainerCount = parse(containerCountHeader)
 	info.RecievedBytes = parse(recievedBytesHeader)
 	info.TransferedBytes = parse(transferedBytesHeader)
-
 	return
 }
 
@@ -163,7 +164,6 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 
 func (c *Client) fixURL(request *http.Request) error {
 	newRequest, err := http.NewRequest(request.Method, c.url(request.URL.Path), request.Body)
-	log.Println("fixing url", request.URL, "->", newRequest.URL.String())
 	*request = *newRequest
 	return err
 }

@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"crypto/md5"
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"io/ioutil"
@@ -69,6 +71,8 @@ func TestIntegration(t *testing.T) {
 		})
 		Convey("Upload", func() {
 			uploadData := randData(512)
+			hashByte := md5.Sum(uploadData)
+			hash := hex.EncodeToString(hashByte[:])
 			f, err := ioutil.TempFile("", randString(12))
 			defer f.Close()
 			f.Write(uploadData)
@@ -77,6 +81,12 @@ func TestIntegration(t *testing.T) {
 			basename := filepath.Base(filename)
 			container := "test"
 			So(c.UploadFile(filename, container), ShouldBeNil)
+			Convey("File info", func() {
+				info, err := c.ObjectInfo(container, basename)
+				So(err, ShouldBeNil)
+				So(info.Hash, ShouldEqual, hash)
+				So(info.Downloaded, ShouldEqual, 0)
+			})
 			Convey("Download", func() {
 				link := c.URL(container, basename)
 				req, err := http.NewRequest("GET", link, nil)

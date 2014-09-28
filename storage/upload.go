@@ -9,6 +9,10 @@ import (
 	"path/filepath"
 )
 
+const (
+	contentTypeHeader = "Content-Type"
+)
+
 var (
 	// ErrorUnableUpload occurs when selectel returns bad code
 	ErrorUnableUpload = errors.New("Unable to upload file")
@@ -39,7 +43,7 @@ func (c *Client) Upload(reader io.Reader, container, filename, contentType strin
 	request, _ := http.NewRequest("PUT", c.URL(container, filename), reader)
 	if !blank(contentType) {
 		request.Header = http.Header{}
-		request.Header.Add("Content-Type", contentType)
+		request.Header.Add(contentTypeHeader, contentType)
 	}
 
 	res, err := c.do(request)
