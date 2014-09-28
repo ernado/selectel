@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,6 +24,21 @@ type ObjectInfo struct {
 	Hash         string    `json:"hash"`
 	LastModified time.Time `json:"last_modified"`
 	Name         string    `json:"name"`
+}
+
+type Object struct {
+	name      string
+	container ContainerAPI
+	api       API
+}
+
+type ObjectAPI interface {
+	Info() (ObjectInfo, error)
+	Remove() error
+	Download() ([]byte, error)
+	Upload(reader io.Reader, contentType string) error
+	UploadFile(filename string) error
+	GetReader() (io.ReadCloser, error)
 }
 
 func (c *Client) ObjectInfo(container, filename string) (f ObjectInfo, err error) {
@@ -50,4 +67,39 @@ func (c *Client) ObjectInfo(container, filename string) (f ObjectInfo, err error
 	}
 	f.Downloaded = parse(objectDownloadsHeader)
 	return
+}
+
+func (o *Object) Info() (info ObjectInfo, err error) {
+	return o.container.ObjectInfo(o.name)
+}
+
+func (o *Object) Upload(reader io.Reader, contentType string) error {
+	return o.container.Upload(reader, o.name, contentType)
+}
+
+func (o *Object) UploadFile(filename string) error {
+	return o.container.UploadFile(filename)
+}
+
+func (o *Object) Download() ([]byte, error) {
+	reader, err := o.GetReader()
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.ReadAll(reader)
+}
+
+func (o *Object) GetReader() (io.ReadCloser, error) {
+	request, _ := http.NewRequest("GET", o.container.URL(o.name), nil)
+	res, err := o.api.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode == http.StatusNotFound {
+		return nil, ErrorObjectNotFound
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, ErrorBadResponce
+	}
+	return res.Body, nil
 }

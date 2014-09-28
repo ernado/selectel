@@ -35,6 +35,8 @@ type ContainerAPI interface {
 	Remove() error
 	// Create creates current container
 	Create(bool) error
+	// ObjectInfo returns info about object in container
+	ObjectInfo(name string) (ObjectInfo, error)
 }
 
 // Upload reads all data from reader and uploads to contaier with filename and content type
@@ -76,6 +78,10 @@ func (c *Container) UploadFile(filename string) error {
 // DeleteObject is shortcut to API.DeleteObject
 func (c *Container) DeleteObject(filename string) error {
 	return c.api.DeleteObject(c.name, filename)
+}
+
+func (c *Container) ObjectInfo(name string) (ObjectInfo, error) {
+	return c.api.ObjectInfo(c.name, name)
 }
 
 // C is shortcut to Client.Container
