@@ -22,6 +22,13 @@ func TestFile(t *testing.T) {
 		So(c.token, ShouldEqual, "token")
 		So(c.tokenExpire, ShouldEqual, 110)
 		Convey("Info", func() {
+			Convey("Url error", func() {
+				// TODO: Remove panic
+				c.setClient(NewTestClientError(nil, ErrorAuth))
+				So(func() {
+					c.ObjectInfo("123%45%6", "123%45%6")
+				}, ShouldPanic)
+			})
 			Convey("Ok", func() {
 				callback := func(request *http.Request) (resp *http.Response, err error) {
 					resp = new(http.Response)
