@@ -79,6 +79,7 @@ type API interface {
 	RemoveContainer(name string) error
 	// ObjectInfo returns information about object in container
 	ObjectInfo(container, filename string) (f ObjectInfo, err error)
+	ContainerInfo(name string) (info ContainerInfo, err error)
 }
 
 // DoClient is mock of http.Client
