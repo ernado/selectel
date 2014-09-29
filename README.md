@@ -1,4 +1,4 @@
-<!-- [![Selectel](http://blog.selectel.ru/wp-content/themes/selectel/static/img/selectel.png)](https://selectel.ru/) -->
+[![Selectel](http://blog.selectel.ru/wp-content/themes/selectel/static/img/selectel.png)](https://selectel.ru/)
 
 Selectel api
 =======
