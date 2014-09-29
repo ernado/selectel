@@ -1,13 +1,13 @@
-[![Selectel](http://blog.selectel.ru/wp-content/themes/selectel/static/img/selectel.png)](https://selectel.ru/)
+<!-- [![Selectel](http://blog.selectel.ru/wp-content/themes/selectel/static/img/selectel.png)](https://selectel.ru/) -->
 
 Selectel api
 =======
 ```
   Language  Files  Code  Comment  Blank  Total
-     Total     11  1536      102    101   1739
-        Go     11  1536      102    101   1739
+     Total     11  1646      103    108   1857
+        Go     11  1646      103    108   1857
 
-  Assertions: 538
+  Assertions: 573
   Integrational tests included
 ```
 
