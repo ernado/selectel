@@ -73,5 +73,28 @@ func TestMethods(t *testing.T) {
 			So(c.url("a", "b", "ccc"), ShouldEqual, "https://xxx.selcdn.ru/a/b/ccc")
 			So(c.URL("container", "filename"), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
 		})
+		Convey("Do", func() {
+			Convey("Header nil fix", func() {
+				callback := func(request *http.Request) (*http.Response, error) {
+					resp := new(http.Response)
+					resp.Header = http.Header{}
+					resp.Header.Add("X-Account-Object-Count", "5563")
+					resp.Header.Add("X-Account-Bytes-Used", "6427888648")
+					resp.Header.Add("X-Account-Container-Count", "27")
+					resp.Header.Add("X-Received-Bytes", "110278989542")
+					resp.Header.Add("X-Transfered-Bytes", "224961419192")
+					resp.StatusCode = http.StatusOK
+					So(request.Header, ShouldNotBeNil)
+					return resp, nil
+				}
+				c.setClient(NewTestClient(callback))
+				req, err := http.NewRequest(getMethod, "/", nil)
+				req.Header = nil
+				So(err, ShouldBeNil)
+				res, err := c.Do(req)
+				So(err, ShouldBeNil)
+				So(res.StatusCode, ShouldEqual, http.StatusOK)
+			})
+		})
 	})
 }

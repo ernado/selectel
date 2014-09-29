@@ -38,6 +38,8 @@ var (
 	ErrorObjectNotFound = errors.New("Object not found")
 	// ErrorBadResponce occurs when server returns unexpected code
 	ErrorBadResponce = errors.New("Unable to process api responce")
+	// ErrorBadName
+	ErrorBadName = errors.New("Bad container/object name provided")
 )
 
 // Client is selectel storage api client
@@ -49,6 +51,7 @@ type Client struct {
 	user        string
 	key         string
 	client      DoClient
+	file        fileMock
 }
 
 // StorageInformation contains some usefull metrics about storage for current user
@@ -160,6 +163,21 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 		return nil, ErrorAuth
 	}
 	return
+}
+
+func (c *Client) NewRequest(method string, body io.Reader, parms ...string) (*http.Request, error) {
+	var badName bool
+	for i := range parms {
+		if len(parms[i]) > 256 {
+			badName = true
+		}
+		parms[i] = url.QueryEscape(parms[i])
+	}
+	req, err := http.NewRequest(method, c.url(parms...), body)
+	if err != nil || badName {
+		return nil, ErrorBadName
+	}
+	return req, nil
 }
 
 func (c *Client) fixURL(request *http.Request) error {

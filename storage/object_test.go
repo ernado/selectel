@@ -1,8 +1,11 @@
 package storage
 
 import (
+	"bytes"
 	. "github.com/smartystreets/goconvey/convey"
+	"io/ioutil"
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -21,14 +24,106 @@ func TestFile(t *testing.T) {
 		So(c.storageURL.String(), ShouldEqual, "https://xxx.selcdn.ru/")
 		So(c.token, ShouldEqual, "token")
 		So(c.tokenExpire, ShouldEqual, 110)
+		Convey("Methods", func() {
+			data := randData(512)
+			Convey("Download", func() {
+				Convey("Ok", func() {
+					callback := func(request *http.Request) (resp *http.Response, err error) {
+						resp = new(http.Response)
+						So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+						So(request.Method, ShouldEqual, "GET")
+						resp.Header = http.Header{}
+						resp.Header.Set("X-Object-Downloads", "17")
+						resp.Header.Set("etag", "0f343b0931126a20f133d67c2b018a3b")
+						resp.Header.Set("Content-Length", "1024")
+						resp.ContentLength = 1024
+						resp.Header.Set("Content-Type", "application/octet-stream")
+						resp.Header.Set("last-modified", "Mon, 21 May 2013 12:27:11 GMT")
+						resp.StatusCode = http.StatusOK
+						resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+						return
+					}
+					c.setClient(NewTestClient(callback))
+					dataRead, err := c.Container("container").Object("filename").Download()
+					So(err, ShouldBeNil)
+					So(reflect.DeepEqual(data, dataRead), ShouldBeTrue)
+				})
+				Convey("Not found", func() {
+					callback := func(request *http.Request) (resp *http.Response, err error) {
+						resp = new(http.Response)
+						So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+						So(request.Method, ShouldEqual, "GET")
+						resp.StatusCode = http.StatusNotFound
+						return
+					}
+					c.setClient(NewTestClient(callback))
+					_, err := c.Container("container").Object("filename").Download()
+					So(err, ShouldEqual, ErrorObjectNotFound)
+				})
+			})
+			Convey("GetReader", func() {
+				Convey("Ok", func() {
+					callback := func(request *http.Request) (resp *http.Response, err error) {
+						resp = new(http.Response)
+						So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+						So(request.Method, ShouldEqual, "GET")
+						resp.Header = http.Header{}
+						resp.Header.Set("X-Object-Downloads", "17")
+						resp.Header.Set("etag", "0f343b0931126a20f133d67c2b018a3b")
+						resp.Header.Set("Content-Length", "1024")
+						resp.ContentLength = 1024
+						resp.Header.Set("Content-Type", "application/octet-stream")
+						resp.Header.Set("last-modified", "Mon, 21 May 2013 12:27:11 GMT")
+						resp.StatusCode = http.StatusOK
+						resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+						return
+					}
+					c.setClient(NewTestClient(callback))
+					reader, err := c.Container("container").Object("filename").GetReader()
+					So(err, ShouldBeNil)
+					dataRead, err := ioutil.ReadAll(reader)
+					So(err, ShouldBeNil)
+					So(reflect.DeepEqual(data, dataRead), ShouldBeTrue)
+				})
+				Convey("Not found", func() {
+					callback := func(request *http.Request) (resp *http.Response, err error) {
+						resp = new(http.Response)
+						So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+						So(request.Method, ShouldEqual, "GET")
+						resp.StatusCode = http.StatusNotFound
+						return
+					}
+					c.setClient(NewTestClient(callback))
+					_, err := c.Container("container").Object("filename").GetReader()
+					So(err, ShouldEqual, ErrorObjectNotFound)
+				})
+				Convey("Bad responce", func() {
+					callback := func(request *http.Request) (resp *http.Response, err error) {
+						resp = new(http.Response)
+						So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+						So(request.Method, ShouldEqual, "GET")
+						resp.StatusCode = http.StatusTeapot
+						return
+					}
+					c.setClient(NewTestClient(callback))
+					_, err := c.Container("container").Object("filename").GetReader()
+					So(err, ShouldEqual, ErrorBadResponce)
+				})
+				Convey("Auth", func() {
+					c.setClient(NewTestClientError(nil, ErrorAuth))
+					_, err := c.Container("container").Object("filename").GetReader()
+					So(err, ShouldEqual, ErrorAuth)
+				})
+			})
+		})
 		Convey("Info", func() {
 			Convey("Url error", func() {
 				// TODO: Remove panic
 				c.setClient(NewTestClientError(nil, ErrorAuth))
-				So(func() {
-					c.ObjectInfo("123%45%6", "123%45%6")
-				}, ShouldPanic)
+				_, err := c.ObjectInfo("123%45%6", randString(512))
+				So(err, ShouldEqual, ErrorBadName)
 			})
+
 			Convey("Ok", func() {
 				callback := func(request *http.Request) (resp *http.Response, err error) {
 					resp = new(http.Response)
@@ -98,6 +193,25 @@ func TestFile(t *testing.T) {
 				_, err := c.ObjectInfo("container", "filename")
 				So(err, ShouldEqual, ErrorBadResponce)
 			})
+			Convey("Not found", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+					So(request.Method, ShouldEqual, "HEAD")
+					resp.Header = http.Header{}
+					resp.Header.Set("X-Object-Downloads", "17")
+					resp.Header.Set("etag", "0f343b0931126a20f133d67c2b018a3b")
+					resp.Header.Set("Content-Length", "1024")
+					resp.ContentLength = 1024
+					resp.Header.Set("Content-Type", "application/octet-stream")
+					resp.Header.Set("last-modified", "Mon, 21 May 2013 12:27:11 GMT")
+					resp.StatusCode = http.StatusNotFound
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				_, err := c.ObjectInfo("container", "filename")
+				So(err, ShouldEqual, ErrorObjectNotFound)
+			})
 			Convey("Bad time", func() {
 				callback := func(request *http.Request) (resp *http.Response, err error) {
 					resp = new(http.Response)
@@ -110,7 +224,7 @@ func TestFile(t *testing.T) {
 					resp.ContentLength = 1024
 					resp.Header.Set("Content-Type", "application/octet-stream")
 					resp.Header.Set("last-modified", "asdfsafsadfsdafasdf")
-					resp.StatusCode = http.StatusTeapot
+					resp.StatusCode = http.StatusOK
 					return
 				}
 				c.setClient(NewTestClient(callback))

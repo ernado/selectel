@@ -42,7 +42,10 @@ type ObjectAPI interface {
 }
 
 func (c *Client) ObjectInfo(container, filename string) (f ObjectInfo, err error) {
-	request, _ := http.NewRequest(headMethod, c.URL(container, filename), nil)
+	request, err := c.NewRequest(headMethod, nil, container, filename)
+	if err != nil {
+		return f, err
+	}
 	res, err := c.do(request)
 	if err != nil {
 		return f, err

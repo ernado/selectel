@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -26,21 +27,47 @@ func TestUpload(t *testing.T) {
 		So(c.tokenExpire, ShouldEqual, 110)
 		Convey("Simple upload", func() {
 			data := bytes.NewBufferString("data")
-			callback := func(request *http.Request) (resp *http.Response, err error) {
-				resp = new(http.Response)
-				data, err := ioutil.ReadAll(request.Body)
-				So(err, ShouldBeNil)
-				So(string(data), ShouldEqual, "data")
-				So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
-				resp.StatusCode = http.StatusCreated
-				return
-			}
-			c.setClient(NewTestClient(callback))
-			Convey("Direct", func() {
-				So(c.Upload(data, "container", "filename", "text/plain"), ShouldBeNil)
+			Convey("Ok", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					data, err := ioutil.ReadAll(request.Body)
+					So(err, ShouldBeNil)
+					So(string(data), ShouldEqual, "data")
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+					resp.StatusCode = http.StatusCreated
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				Convey("Direct", func() {
+					So(c.Upload(data, "container", "filename", "text/plain"), ShouldBeNil)
+				})
+				Convey("Shortcut", func() {
+					So(c.Container("container").Object("filename").Upload(data, "text/plain"), ShouldBeNil)
+				})
 			})
-			Convey("Shortcut", func() {
-				So(c.Container("container").Object("filename").Upload(data, "text/plain"), ShouldBeNil)
+			Convey("Not found", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					data, err := ioutil.ReadAll(request.Body)
+					So(err, ShouldBeNil)
+					So(string(data), ShouldEqual, "data")
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+					So(request.Method, ShouldEqual, "PUT")
+					resp.StatusCode = http.StatusNotFound
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				So(c.Upload(data, "container", "filename", "text/plain"), ShouldNotBeNil)
+			})
+			Convey("Auth", func() {
+				c.setClient(NewTestClientError(nil, ErrorAuth))
+				So(c.Upload(data, "c", "f", "text/plain"), ShouldEqual, ErrorAuth)
+			})
+			Convey("Bad name", func() {
+				So(c.Upload(data, "c", randString(512), "text/plain"), ShouldEqual, ErrorBadName)
+				So(c.Upload(data, randString(512), randString(512), "text/plain"), ShouldEqual, ErrorBadName)
+				So(c.Upload(data, randString(512), "f", "text/plain"), ShouldEqual, ErrorBadName)
+				So(c.Upload(data, randString(512), "f", randString(1024)), ShouldEqual, ErrorBadName)
 			})
 		})
 		Convey("File upload", func() {
@@ -69,24 +96,20 @@ func TestUpload(t *testing.T) {
 				So(c.Container("container").Object(basename).UploadFile(filename), ShouldBeNil)
 			})
 			Convey("IO error", func() {
-				So(c.UploadFile(randString(100), "container"), ShouldNotBeNil)
+				Convey("Bad file", func() {
+					So(c.UploadFile(randString(100), "container"), ShouldNotBeNil)
+				})
+				Convey("Open error", func() {
+					c.fileSetMockError(io.ErrUnexpectedEOF, nil)
+					So(c.UploadFile(randString(100), "container"), ShouldNotBeNil)
+				})
+				Convey("Stat error", func() {
+					c.fileSetMockError(nil, io.ErrUnexpectedEOF)
+					So(c.UploadFile(randString(100), "container"), ShouldNotBeNil)
+				})
 			})
 		})
-		Convey("404", func() {
-			data := bytes.NewBufferString("data")
-			callback := func(request *http.Request) (resp *http.Response, err error) {
-				resp = new(http.Response)
-				data, err := ioutil.ReadAll(request.Body)
-				So(err, ShouldBeNil)
-				So(string(data), ShouldEqual, "data")
-				So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
-				So(request.Method, ShouldEqual, "PUT")
-				resp.StatusCode = http.StatusNotFound
-				return
-			}
-			c.setClient(NewTestClient(callback))
-			So(c.Upload(data, "container", "filename", "text/plain"), ShouldNotBeNil)
-		})
+
 		Convey("Url", func() {
 			So(c.Container("container").URL("filename"), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
 			So(c.C("container").URL("filename"), ShouldEqual, "https://xxx.selcdn.ru/container/filename")

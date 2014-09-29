@@ -111,7 +111,10 @@ func (c *Client) Container(name string) ContainerAPI {
 // CreateContainer creates new container and retuns it.
 // If container already exists, function will return existing container
 func (c *Client) CreateContainer(name string, private bool) (ContainerAPI, error) {
-	req, _ := http.NewRequest(putMethod, c.url(name), nil)
+	req, err := c.NewRequest(putMethod, nil, name)
+	if err != nil {
+		return nil, err
+	}
 	req.Header = http.Header{}
 	containerType := containerPublic
 	if private {

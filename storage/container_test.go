@@ -175,6 +175,10 @@ func TestContainerMethods(t *testing.T) {
 				So(err, ShouldEqual, ErrorBadResponce)
 				So(container, ShouldBeNil)
 			})
+			Convey("Bad Name", func() {
+				_, err := c.CreateContainer(randString(512), false)
+				So(err, ShouldEqual, ErrorBadName)
+			})
 			Convey("Already exists", func() {
 				callback := func(request *http.Request) (resp *http.Response, err error) {
 					resp = new(http.Response)
