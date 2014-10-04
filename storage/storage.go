@@ -201,6 +201,7 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 	}
 	log.Println(request.Method, request.URL.String(), res.StatusCode, duration)
 	if res.StatusCode == http.StatusUnauthorized {
+		c.expireFrom = nil // ensure that next request will force authentication
 		return nil, ErrorAuth
 	}
 	return

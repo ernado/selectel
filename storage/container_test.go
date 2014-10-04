@@ -217,8 +217,6 @@ func TestContainerMethods(t *testing.T) {
 				name := randString(10)
 				callback := func(request *http.Request) (resp *http.Response, err error) {
 					resp = new(http.Response)
-					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/"+name)
-					So(request.Method, ShouldEqual, "DELETE")
 					resp.StatusCode = http.StatusUnauthorized
 					return
 				}
