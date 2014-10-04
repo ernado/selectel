@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"bytes"
 	. "github.com/smartystreets/goconvey/convey"
+	"io/ioutil"
 	"net/http"
 	"testing"
 )
@@ -42,6 +44,151 @@ func TestMethods(t *testing.T) {
 				resp.StatusCode = http.StatusConflict
 				c.setClient(NewTestClientError(resp, ErrorBadResponce))
 				So(c.RemoveObject("container", "filename"), ShouldEqual, ErrorBadResponce)
+			})
+		})
+		Convey("Containers", func() {
+			Convey("Ok", func() {
+				callback := func(req *http.Request) (*http.Response, error) {
+					resp := new(http.Response)
+					resp.StatusCode = http.StatusOK
+					So(req.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/?format=json")
+					So(req.Method, ShouldEqual, "GET")
+					resp.Body = ioutil.NopCloser(bytes.NewBufferString(`
+					[
+						{
+						    "bytes": 81292837,
+						    "count": 17,
+						    "name": "container 1",
+						    "rx_bytes": 17936289,
+						    "tx_bytes": 11088956,
+						    "type": "private"
+						},
+						{
+						    "bytes": 124355568,
+						    "count": 86,
+						    "name": "container 2",
+						    "rx_bytes": 296955064,
+						    "tx_bytes": 79205328,
+						    "type": "public"
+						}
+					]`))
+					return resp, nil
+				}
+				c.setClient(NewTestClient(callback))
+				info, err := c.Containers()
+				So(err, ShouldBeNil)
+				So(len(info), ShouldEqual, 2)
+			})
+			Convey("Auth error", func() {
+				c.setClient(NewTestClientError(nil, ErrorAuth))
+				_, err := c.Containers()
+				So(err, ShouldEqual, ErrorAuth)
+			})
+		})
+		Convey("ContainersInfo", func() {
+			Convey("Ok", func() {
+				callback := func(req *http.Request) (*http.Response, error) {
+					resp := new(http.Response)
+					resp.StatusCode = http.StatusOK
+					So(req.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/?format=json")
+					So(req.Method, ShouldEqual, "GET")
+					resp.Body = ioutil.NopCloser(bytes.NewBufferString(`
+					[
+						{
+						    "bytes": 81292837,
+						    "count": 17,
+						    "name": "container 1",
+						    "rx_bytes": 17936289,
+						    "tx_bytes": 11088956,
+						    "type": "private"
+						},
+						{
+						    "bytes": 124355568,
+						    "count": 86,
+						    "name": "container 2",
+						    "rx_bytes": 296955064,
+						    "tx_bytes": 79205328,
+						    "type": "public"
+						}
+					]`))
+					return resp, nil
+				}
+				c.setClient(NewTestClient(callback))
+				info, err := c.ContainersInfo()
+				So(err, ShouldBeNil)
+				So(len(info), ShouldEqual, 2)
+				So(info[0].Name, ShouldEqual, "container 1")
+				So(info[0].Type, ShouldEqual, "private")
+				So(info[1].Name, ShouldEqual, "container 2")
+				So(info[1].Type, ShouldEqual, "public")
+				So(info[1].ObjectCount, ShouldEqual, 86)
+			})
+			Convey("Auth error", func() {
+				c.setClient(NewTestClientError(nil, ErrorAuth))
+				_, err := c.ContainersInfo()
+				So(err, ShouldEqual, ErrorAuth)
+			})
+			Convey("Bad responce", func() {
+				callback := func(req *http.Request) (*http.Response, error) {
+					resp := new(http.Response)
+					resp.StatusCode = http.StatusTeapot
+					So(req.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/?format=json")
+					So(req.Method, ShouldEqual, "GET")
+					resp.Body = ioutil.NopCloser(bytes.NewBufferString(`
+					[
+						{
+						    "bytes": 81292837,
+						    "count": 17,
+						    "name": "container 1",
+						    "rx_bytes": 17936289,
+						    "tx_bytes": 11088956,
+						    "type": "private"
+						},
+						{
+						    "bytes": 124355568,
+						    "count": 86,
+						    "name": "container 2",
+						    "rx_bytes": 296955064,
+						    "tx_bytes": 79205328,
+						    "type": "public"
+						}
+					]`))
+					return resp, nil
+				}
+				c.setClient(NewTestClient(callback))
+				_, err := c.ContainersInfo()
+				So(err, ShouldEqual, ErrorBadResponce)
+			})
+			Convey("JSON error", func() {
+				callback := func(req *http.Request) (*http.Response, error) {
+					resp := new(http.Response)
+					So(req.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/?format=json")
+					So(req.Method, ShouldEqual, "GET")
+					resp.StatusCode = http.StatusOK
+					resp.Body = ioutil.NopCloser(bytes.NewBufferString(`
+					[
+						{
+						    "bytes": 81292837,
+						    "count": 17,
+						    "name": "container 1",
+						    "rx_bytes": 17936289,
+						    "tx_bytes": 11088956,
+						    "type": "private",,,,,,,
+						},
+						{
+						    "bytes": 124355568,
+						    "count": 86,
+						    "name": "container 2",
+						    "rx_bytes": 296955064,
+						    "tx_bytes": 79205328,
+						    "type": "public"
+						}
+					]`))
+					return resp, nil
+				}
+				c.setClient(NewTestClient(callback))
+				_, err := c.ContainersInfo()
+				So(err, ShouldNotBeNil)
 			})
 		})
 		Convey("Info", func() {

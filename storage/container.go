@@ -34,7 +34,7 @@ type ContainerInfo struct {
 	Name            string `json:"name"`
 	RecievedBytes   uint64 `json:"rx_bytes"`
 	TransferedBytes uint64 `json:"tx_bytes"`
-	Type            string `json:"private"`
+	Type            string `json:"type"`
 }
 
 // ContainerAPI is interface for selectel storage container
