@@ -182,6 +182,11 @@ func TestIntegration(t *testing.T) {
 				Convey("Remove", func() {
 					So(c.Container(name).Remove(), ShouldBeNil)
 				})
+				Convey("List", func() {
+					containers, err := c.Containers()
+					So(err, ShouldBeNil)
+					So(len(containers), ShouldNotEqual, 0)
+				})
 			})
 			Convey("Upload", func() {
 				uploadData := randData(512)

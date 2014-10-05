@@ -28,6 +28,72 @@ func TestContainerMethods(t *testing.T) {
 		So(c.storageURL.String(), ShouldEqual, "https://xxx.selcdn.ru/")
 		So(c.token, ShouldEqual, "token")
 		So(c.tokenExpire, ShouldEqual, 110)
+		Convey("Info", func() {
+			Convey("Ok", func() {
+				resp := new(http.Response)
+				resp.Header = http.Header{}
+				resp.Header.Add("X-Container-Object-Count", "140")
+				resp.Header.Add("X-Container-Bytes-Used", "68724")
+				resp.Header.Add("X-Container-Meta-Type", "private")
+				resp.Header.Add("X-Received-Bytes", "110278989542")
+				resp.Header.Add("X-Transfered-Bytes", "224961419192")
+				resp.StatusCode = http.StatusNoContent
+				c.setClient(NewTestClientSimple(resp))
+				info, err := c.ContainerInfo("name")
+				So(err, ShouldBeNil)
+				So(info.RecievedBytes, ShouldEqual, uint64(110278989542))
+				So(info.TransferedBytes, ShouldEqual, uint64(224961419192))
+				So(info.BytesUsed, ShouldEqual, 68724)
+				So(info.Type, ShouldEqual, "private")
+				So(info.ObjectCount, ShouldEqual, 140)
+			})
+			Convey("Bad responce", func() {
+				resp := new(http.Response)
+				resp.Header = http.Header{}
+				resp.Header.Add("X-Container-Object-Count", "140")
+				resp.Header.Add("X-Container-Bytes-Used", "68724")
+				resp.Header.Add("X-Container-Meta-Type", "private")
+				resp.Header.Add("X-Received-Bytes", "110278989542")
+				resp.Header.Add("X-Transfered-Bytes", "224961419192")
+				resp.StatusCode = http.StatusTeapot
+				c.setClient(NewTestClientSimple(resp))
+				_, err := c.ContainerInfo("name")
+				So(err, ShouldEqual, ErrorBadResponce)
+			})
+			Convey("Auth", func() {
+				resp := new(http.Response)
+				resp.Header = http.Header{}
+				resp.Header.Add("X-Container-Object-Count", "140")
+				resp.Header.Add("X-Container-Bytes-Used", "68724")
+				resp.Header.Add("X-Container-Meta-Type", "private")
+				resp.Header.Add("X-Received-Bytes", "110278989542")
+				resp.Header.Add("X-Transfered-Bytes", "224961419192")
+				resp.StatusCode = http.StatusUnauthorized
+				c.setClient(NewTestClientSimple(resp))
+				_, err := c.ContainerInfo("name")
+				So(err, ShouldEqual, ErrorAuth)
+			})
+			Convey("Not found", func() {
+				resp := new(http.Response)
+				resp.StatusCode = http.StatusNotFound
+				c.setClient(NewTestClientSimple(resp))
+				_, err := c.ContainerInfo("name")
+				So(err, ShouldEqual, ErrorObjectNotFound)
+			})
+			Convey("Bad name", func() {
+				resp := new(http.Response)
+				resp.Header = http.Header{}
+				resp.Header.Add("X-Container-Object-Count", "140")
+				resp.Header.Add("X-Container-Bytes-Used", "68724")
+				resp.Header.Add("X-Container-Meta-Type", "private")
+				resp.Header.Add("X-Received-Bytes", "110278989542")
+				resp.Header.Add("X-Transfered-Bytes", "224961419192")
+				resp.StatusCode = http.StatusTeapot
+				c.setClient(NewTestClientSimple(resp))
+				_, err := c.ContainerInfo(randString(512))
+				So(err, ShouldEqual, ErrorBadName)
+			})
+		})
 		Convey("Name", func() {
 			So(c.C("container").Name(), ShouldEqual, "container")
 		})
@@ -151,14 +217,15 @@ func TestContainerMethods(t *testing.T) {
 				name := randString(10)
 				callback := func(request *http.Request) (resp *http.Response, err error) {
 					resp = new(http.Response)
-					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/"+name)
-					So(request.Method, ShouldEqual, "DELETE")
 					resp.StatusCode = http.StatusUnauthorized
 					return
 				}
 				c.setClient(NewTestClient(callback))
 				So(c.RemoveContainer(name), ShouldEqual, ErrorAuth)
 				So(c.Container(name).Remove(), ShouldEqual, ErrorAuth)
+			})
+			Convey("Bad name", func() {
+				So(c.RemoveContainer(randString(512)), ShouldEqual, ErrorBadName)
 			})
 		})
 		Convey("Create", func() {
@@ -174,6 +241,10 @@ func TestContainerMethods(t *testing.T) {
 				container, err := c.CreateContainer("container", false)
 				So(err, ShouldEqual, ErrorBadResponce)
 				So(container, ShouldBeNil)
+			})
+			Convey("Bad Name", func() {
+				_, err := c.CreateContainer(randString(512), false)
+				So(err, ShouldEqual, ErrorBadName)
 			})
 			Convey("Already exists", func() {
 				callback := func(request *http.Request) (resp *http.Response, err error) {

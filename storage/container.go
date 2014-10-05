@@ -5,12 +5,15 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 const (
-	containerMetaTypeHeader = "X-Container-Meta-Type"
-	containerPublic         = "public"
-	containerPrivate        = "private"
+	containerMetaTypeHeader    = "X-Container-Meta-Type"
+	containerPublic            = "public"
+	containerPrivate           = "private"
+	containerBytesUserHeader   = "X-Container-Bytes-Used"
+	containerObjectCountHeader = "X-Container-Object-Count"
 )
 
 var (
@@ -22,6 +25,16 @@ var (
 type Container struct {
 	name string
 	api  API
+}
+
+// ContainerInfo is information about container
+type ContainerInfo struct {
+	BytesUsed       uint64 `json:"bytes"`
+	ObjectCount     uint64 `json:"count"`
+	Name            string `json:"name"`
+	RecievedBytes   uint64 `json:"rx_bytes"`
+	TransferedBytes uint64 `json:"tx_bytes"`
+	Type            string `json:"type"`
 }
 
 // ContainerAPI is interface for selectel storage container
@@ -111,7 +124,10 @@ func (c *Client) Container(name string) ContainerAPI {
 // CreateContainer creates new container and retuns it.
 // If container already exists, function will return existing container
 func (c *Client) CreateContainer(name string, private bool) (ContainerAPI, error) {
-	req, _ := http.NewRequest(putMethod, c.url(name), nil)
+	req, err := c.NewRequest(putMethod, nil, name)
+	if err != nil {
+		return nil, err
+	}
 	req.Header = http.Header{}
 	containerType := containerPublic
 	if private {
@@ -132,7 +148,10 @@ func (c *Client) CreateContainer(name string, private bool) (ContainerAPI, error
 // RemoveContainer removes container with provided name
 // Container should be empty before removing and must exist
 func (c *Client) RemoveContainer(name string) error {
-	req, _ := http.NewRequest(deleteMethod, c.url(name), nil)
+	req, err := c.NewRequest(deleteMethod, nil, name)
+	if err != nil {
+		return err
+	}
 	res, err := c.Do(req)
 	if err != nil {
 		return err
@@ -147,4 +166,36 @@ func (c *Client) RemoveContainer(name string) error {
 		return nil
 	}
 	return ErrorBadResponce
+}
+
+func (c *Client) ContainerInfo(name string) (info ContainerInfo, err error) {
+	req, err := c.NewRequest(getMethod, nil, name)
+	if err != nil {
+		return
+	}
+	res, err := c.Do(req)
+	if err != nil {
+		return
+	}
+
+	if res.StatusCode == http.StatusNotFound {
+		return info, ErrorObjectNotFound
+	}
+
+	if res.StatusCode != http.StatusNoContent {
+		return info, ErrorBadResponce
+	}
+
+	parse := func(key string) uint64 {
+		v, _ := strconv.ParseUint(res.Header.Get(key), uint64Base, uint64BitSize)
+		return v
+	}
+
+	info.RecievedBytes = parse(recievedBytesHeader)
+	info.TransferedBytes = parse(transferedBytesHeader)
+	info.BytesUsed = parse(containerBytesUserHeader)
+	info.Type = res.Header.Get(containerMetaTypeHeader)
+	info.ObjectCount = parse(containerObjectCountHeader)
+
+	return
 }

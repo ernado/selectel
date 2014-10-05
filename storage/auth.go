@@ -61,7 +61,7 @@ func (c *Client) Auth(user, key string) error {
 		return ErrorAuth
 	}
 	c.storageURL, err = url.Parse(res.Header.Get(storageURLHeader))
-	if err != nil || len(c.storageURL.String()) == 0 {
+	if err != nil || blank(c.storageURL.String()) {
 		return ErrorAuth
 	}
 

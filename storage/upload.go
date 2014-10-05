@@ -18,13 +18,49 @@ var (
 	ErrorUnableUpload = errors.New("Unable to upload file")
 )
 
+type fileMock interface {
+	Open(name string) (*os.File, error)
+	Stat(name string) (os.FileInfo, error)
+}
+
+type fileErrorMock struct {
+	errOpen error
+	errStat error
+}
+
+func (f fileErrorMock) Open(name string) (*os.File, error) {
+	return nil, f.errOpen
+}
+
+func (f fileErrorMock) Stat(name string) (os.FileInfo, error) {
+	return nil, f.errStat
+}
+
+func (c *Client) fileOpen(name string) (*os.File, error) {
+	if c.file != nil {
+		return c.file.Open(name)
+	}
+	return os.Open(name)
+}
+
+func (c *Client) fileSetMockError(errOpen, errStat error) {
+	c.file = &fileErrorMock{errOpen, errStat}
+}
+
+func (c *Client) fileStat(name string) (os.FileInfo, error) {
+	if c.file != nil {
+		return c.file.Stat(name)
+	}
+	return os.Stat(name)
+}
+
 // UploadFile to container
 func (c *Client) UploadFile(filename, container string) error {
-	f, err := os.Open(filename)
+	f, err := c.fileOpen(filename)
 	if err != nil {
 		return err
 	}
-	stats, err := os.Stat(filename)
+	stats, err := c.fileStat(filename)
 	if err != nil {
 		return err
 	}
@@ -40,7 +76,10 @@ func (c *Client) Upload(reader io.Reader, container, filename, contentType strin
 		defer closer.Close()
 	}
 
-	request, _ := http.NewRequest("PUT", c.URL(container, filename), reader)
+	request, err := c.NewRequest(putMethod, reader, container, filename)
+	if err != nil {
+		return err
+	}
 	if !blank(contentType) {
 		request.Header = http.Header{}
 		request.Header.Add(contentTypeHeader, contentType)

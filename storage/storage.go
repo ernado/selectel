@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +15,8 @@ import (
 )
 
 const (
+	queryFormat           = "format"
+	queryJSON             = "json"
 	headMethod            = "HEAD"
 	getMethod             = "GET"
 	postMethod            = "POST"
@@ -38,6 +41,8 @@ var (
 	ErrorObjectNotFound = errors.New("Object not found")
 	// ErrorBadResponce occurs when server returns unexpected code
 	ErrorBadResponce = errors.New("Unable to process api responce")
+	// ErrorBadName
+	ErrorBadName = errors.New("Bad container/object name provided")
 )
 
 // Client is selectel storage api client
@@ -49,6 +54,7 @@ type Client struct {
 	user        string
 	key         string
 	client      DoClient
+	file        fileMock
 }
 
 // StorageInformation contains some usefull metrics about storage for current user
@@ -76,6 +82,9 @@ type API interface {
 	RemoveContainer(name string) error
 	// ObjectInfo returns information about object in container
 	ObjectInfo(container, filename string) (f ObjectInfo, err error)
+	ContainerInfo(name string) (info ContainerInfo, err error)
+	ContainersInfo() ([]ContainerInfo, error)
+	Containers() ([]ContainerAPI, error)
 }
 
 // DoClient is mock of http.Client
@@ -86,6 +95,41 @@ type DoClient interface {
 // setClient sets client
 func (c *Client) setClient(client DoClient) {
 	c.client = client
+}
+
+// ContainersInfo return all container-specific information from storage
+func (c *Client) ContainersInfo() ([]ContainerInfo, error) {
+	info := []ContainerInfo{}
+	request, _ := c.NewRequest(getMethod, nil)
+	query := request.URL.Query()
+	query.Add(queryFormat, queryJSON)
+	request.URL.RawQuery = query.Encode()
+	res, err := c.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return nil, ErrorBadResponce
+	}
+	decoder := json.NewDecoder(res.Body)
+	if err := decoder.Decode(&info); err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+// Containers return all containers from storage
+func (c *Client) Containers() ([]ContainerAPI, error) {
+	info, err := c.ContainersInfo()
+	if err != nil {
+		return nil, err
+	}
+	containers := []ContainerAPI{}
+	for _, container := range info {
+		containers = append(containers, c.Container(container.Name))
+	}
+	return containers, nil
 }
 
 // DeleteObject removes object from specified container
@@ -165,9 +209,25 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 	}
 	log.Println(request.Method, request.URL.String(), res.StatusCode, duration)
 	if res.StatusCode == http.StatusUnauthorized {
+		c.expireFrom = nil // ensure that next request will force authentication
 		return nil, ErrorAuth
 	}
 	return
+}
+
+func (c *Client) NewRequest(method string, body io.Reader, parms ...string) (*http.Request, error) {
+	var badName bool
+	for i := range parms {
+		if len(parms[i]) > 256 {
+			badName = true
+		}
+		parms[i] = url.QueryEscape(parms[i])
+	}
+	req, err := http.NewRequest(method, c.url(parms...), body)
+	if err != nil || badName {
+		return nil, ErrorBadName
+	}
+	return req, nil
 }
 
 func (c *Client) fixURL(request *http.Request) error {
