@@ -20,7 +20,7 @@ func TestMethods(t *testing.T) {
 		So(c.storageURL.String(), ShouldEqual, "https://xxx.selcdn.ru/")
 		So(c.token, ShouldEqual, "token")
 		So(c.tokenExpire, ShouldEqual, 110)
-		Convey("Delete", func() {
+		Convey("Remove", func() {
 			resp := new(http.Response)
 			resp.StatusCode = http.StatusNoContent
 			c.setClient(NewTestClientSimple(resp))

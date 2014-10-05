@@ -90,7 +90,7 @@ func (c *Client) setClient(client DoClient) {
 
 // DeleteObject removes object from specified container
 func (c *Client) RemoveObject(container, filename string) error {
-	request, _ := http.NewRequest(deleteMethod, c.URL(container, filename), nil)
+	request := c.Request(deleteMethod, nil, container, filename)
 	res, err := c.Do(request)
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func (c *Client) RemoveObject(container, filename string) error {
 
 // Info returns StorageInformation for current user
 func (c *Client) Info() (info StorageInformation) {
-	request, _ := http.NewRequest(getMethod, c.url(), nil)
+	request := c.Request(getMethod, nil)
 	res, err := c.do(request)
 	if err != nil {
 		return
@@ -131,6 +131,14 @@ func (c *Client) URL(container, filename string) string {
 // Do performs request with auth token
 func (c *Client) Do(request *http.Request) (res *http.Response, err error) {
 	return c.do(request)
+}
+
+func (c *Client) Request(method string, body io.Reader, params ...string) *http.Request {
+	for i := range params {
+		params[i] = url.QueryEscape(params[i])
+	}
+	request, _ := http.NewRequest(method, c.url(params...), body)
+	return request
 }
 
 func (c *Client) do(request *http.Request) (res *http.Response, err error) {
