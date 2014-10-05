@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"errors"
 	"io"
 	"mime"
 	"net/http"
@@ -13,16 +12,14 @@ const (
 	contentTypeHeader = "Content-Type"
 )
 
-var (
-	// ErrorUnableUpload occurs when selectel returns bad code
-	ErrorUnableUpload = errors.New("Unable to upload file")
-)
-
+// fileMock is mock for file operations
 type fileMock interface {
 	Open(name string) (*os.File, error)
 	Stat(name string) (os.FileInfo, error)
 }
 
+// fileErrorMock is simple mock that returns specified errors on
+// function call.
 type fileErrorMock struct {
 	errOpen error
 	errStat error

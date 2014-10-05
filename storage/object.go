@@ -18,12 +18,13 @@ const (
 
 // ObjectInfo represents object info
 type ObjectInfo struct {
-	Size         uint64    `json:"bytes"`
-	ContentType  string    `json:"content_type"`
-	Downloaded   uint64    `json:"downloaded"`
-	Hash         string    `json:"hash"`
-	LastModified time.Time `json:"last_modified"`
-	Name         string    `json:"name"`
+	Size            uint64    `json:"bytes"`
+	ContentType     string    `json:"content_type"`
+	Downloaded      uint64    `json:"downloaded"`
+	Hash            string    `json:"hash"`
+	LastModifiedStr string    `json:"last_modified"`
+	LastModified    time.Time `json:"-"`
+	Name            string    `json:"name"`
 }
 
 type Object struct {

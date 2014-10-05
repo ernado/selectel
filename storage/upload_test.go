@@ -69,6 +69,20 @@ func TestUpload(t *testing.T) {
 				So(c.Upload(data, randString(512), "f", "text/plain"), ShouldEqual, ErrorBadName)
 				So(c.Upload(data, randString(512), "f", randString(1024)), ShouldEqual, ErrorBadName)
 			})
+			Convey("Bad url", func() {
+				callback := func(request *http.Request) (resp *http.Response, err error) {
+					resp = new(http.Response)
+					data, err := ioutil.ReadAll(request.Body)
+					So(err, ShouldBeNil)
+					So(string(data), ShouldEqual, "data")
+					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
+					resp.StatusCode = http.StatusCreated
+					return
+				}
+				c.setClient(NewTestClient(callback))
+				forceBadURL(c)
+				So(c.Upload(data, "c", "f", "text/plain"), ShouldEqual, ErrorBadName)
+			})
 		})
 		Convey("File upload", func() {
 			f, err := ioutil.TempFile("", "data")

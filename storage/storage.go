@@ -15,21 +15,22 @@ import (
 )
 
 const (
-	queryFormat           = "format"
-	queryJSON             = "json"
-	headMethod            = "HEAD"
-	getMethod             = "GET"
-	postMethod            = "POST"
-	putMethod             = "PUT"
-	deleteMethod          = "DELETE"
-	authTokenHeader       = "X-Auth-Token"
-	objectCountHeader     = "X-Account-Object-Count"
-	bytesUsedHeader       = "X-Account-Bytes-Used"
-	containerCountHeader  = "X-Account-Container-Count"
-	recievedBytesHeader   = "X-Received-Bytes"
-	transferedBytesHeader = "X-Transfered-Bytes"
-	uint64BitSize         = 64
-	uint64Base            = 10
+	fileLastModifiedLayout = "2006-01-02T15:04:05.999999"
+	queryFormat            = "format"
+	queryJSON              = "json"
+	headMethod             = "HEAD"
+	getMethod              = "GET"
+	postMethod             = "POST"
+	putMethod              = "PUT"
+	deleteMethod           = "DELETE"
+	authTokenHeader        = "X-Auth-Token"
+	objectCountHeader      = "X-Account-Object-Count"
+	bytesUsedHeader        = "X-Account-Bytes-Used"
+	containerCountHeader   = "X-Account-Container-Count"
+	recievedBytesHeader    = "X-Received-Bytes"
+	transferedBytesHeader  = "X-Transfered-Bytes"
+	uint64BitSize          = 64
+	uint64Base             = 10
 	// EnvUser is environmental variable for selectel api username
 	EnvUser = "SELECTEL_USER"
 	// EnvKey is environmental variable for selectel api key
@@ -100,7 +101,10 @@ func (c *Client) setClient(client DoClient) {
 // ContainersInfo return all container-specific information from storage
 func (c *Client) ContainersInfo() ([]ContainerInfo, error) {
 	info := []ContainerInfo{}
-	request, _ := c.NewRequest(getMethod, nil)
+	request, err := c.NewRequest(getMethod, nil)
+	if err != nil {
+		return nil, err
+	}
 	query := request.URL.Query()
 	query.Add(queryFormat, queryJSON)
 	request.URL.RawQuery = query.Encode()
@@ -132,9 +136,45 @@ func (c *Client) Containers() ([]ContainerAPI, error) {
 	return containers, nil
 }
 
+func (c *Client) ObjectsInfo(container string) ([]ObjectInfo, error) {
+	info := []ObjectInfo{}
+	request, err := c.NewRequest(getMethod, nil, container)
+	if err != nil {
+		return nil, err
+	}
+	query := request.URL.Query()
+	query.Add(queryFormat, queryJSON)
+	request.URL.RawQuery = query.Encode()
+	res, err := c.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, ErrorObjectNotFound
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, ErrorBadResponce
+	}
+	decoder := json.NewDecoder(res.Body)
+	if err := decoder.Decode(&info); err != nil {
+		return nil, err
+	}
+	for i, v := range info {
+		info[i].LastModified, err = time.Parse(fileLastModifiedLayout, v.LastModifiedStr)
+		if err != nil {
+			return info, err
+		}
+	}
+	return info, nil
+}
+
 // DeleteObject removes object from specified container
 func (c *Client) RemoveObject(container, filename string) error {
-	request := c.Request(deleteMethod, nil, container, filename)
+	request, err := c.NewRequest(deleteMethod, nil, container, filename)
+	if err != nil {
+		return err
+	}
 	res, err := c.Do(request)
 	if err != nil {
 		return err
@@ -150,7 +190,10 @@ func (c *Client) RemoveObject(container, filename string) error {
 
 // Info returns StorageInformation for current user
 func (c *Client) Info() (info StorageInformation) {
-	request := c.Request(getMethod, nil)
+	request, err := c.NewRequest(getMethod, nil)
+	if err != nil {
+		return
+	}
 	res, err := c.do(request)
 	if err != nil {
 		return
@@ -177,37 +220,37 @@ func (c *Client) Do(request *http.Request) (res *http.Response, err error) {
 	return c.do(request)
 }
 
-func (c *Client) Request(method string, body io.Reader, params ...string) *http.Request {
-	for i := range params {
-		params[i] = url.QueryEscape(params[i])
-	}
-	request, _ := http.NewRequest(method, c.url(params...), body)
-	return request
-}
-
 func (c *Client) do(request *http.Request) (res *http.Response, err error) {
+	// prevent null pointer dereference
 	if request.Header == nil {
 		request.Header = http.Header{}
 	}
+	// check for token expiration / first request with async auth
 	if request.URL.String() != authURL && c.Expired() {
-		log.Println("[selectel]", "token expired")
+		log.Println("[selectel]", "token expired, performing auth")
 		if err = c.Auth(c.user, c.key); err != nil {
 			return
 		}
+		// fix hostname of request
 		c.fixURL(request)
 	}
+	// add auth token to headers
 	if !blank(c.token) {
 		request.Header.Add(authTokenHeader, c.token)
 	}
+	// perform request and record time elapsed
 	start := time.Now().Truncate(time.Millisecond)
 	res, err = c.client.Do(request)
 	stop := time.Now().Truncate(time.Millisecond)
 	duration := stop.Sub(start)
+	// log error
 	if err != nil {
 		log.Println(request.Method, request.URL.String(), err, duration)
 		return
 	}
+	// log request
 	log.Println(request.Method, request.URL.String(), res.StatusCode, duration)
+	// check for auth code
 	if res.StatusCode == http.StatusUnauthorized {
 		c.expireFrom = nil // ensure that next request will force authentication
 		return nil, ErrorAuth
@@ -218,9 +261,11 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 func (c *Client) NewRequest(method string, body io.Reader, parms ...string) (*http.Request, error) {
 	var badName bool
 	for i := range parms {
+		// check for length
 		if len(parms[i]) > 256 {
 			badName = true
 		}
+		// todo: check for trialing slash
 		parms[i] = url.QueryEscape(parms[i])
 	}
 	req, err := http.NewRequest(method, c.url(parms...), body)

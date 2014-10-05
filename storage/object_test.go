@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-func TestFile(t *testing.T) {
+func TestObject(t *testing.T) {
 	c := newClient(nil)
-	Convey("File", t, func() {
+	Convey("Object", t, func() {
 		resp := new(http.Response)
 		resp.Header = http.Header{}
 		resp.Header.Add("X-Expire-Auth-Token", "110")
@@ -26,6 +26,12 @@ func TestFile(t *testing.T) {
 		So(c.tokenExpire, ShouldEqual, 110)
 		Convey("Methods", func() {
 			data := randData(512)
+			Convey("Remove", func() {
+				Convey("Bad URL", func() {
+					forceBadURL(c)
+					So(c.RemoveObject("c", "f"), ShouldEqual, ErrorBadName)
+				})
+			})
 			Convey("Download", func() {
 				Convey("Ok", func() {
 					callback := func(request *http.Request) (resp *http.Response, err error) {
@@ -118,7 +124,6 @@ func TestFile(t *testing.T) {
 		})
 		Convey("Info", func() {
 			Convey("Url error", func() {
-				// TODO: Remove panic
 				c.setClient(NewTestClientError(nil, ErrorAuth))
 				_, err := c.ObjectInfo("123%45%6", randString(512))
 				So(err, ShouldEqual, ErrorBadName)

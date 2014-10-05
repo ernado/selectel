@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+const (
+	invalidHost = "top_kek%%%%%333@eeкек."
+)
+
 type TestClient struct {
 	callback func(*http.Request) (*http.Response, error)
 }
@@ -42,6 +46,10 @@ func (c *TestClient) Do(request *http.Request) (res *http.Response, err error) {
 	return res, err
 }
 
+func forceBadURL(c *Client) {
+	c.storageURL.Host = invalidHost
+}
+
 func TestAuth(t *testing.T) {
 	c := newClient(nil)
 	Convey("Auth", t, func() {
@@ -58,6 +66,32 @@ func TestAuth(t *testing.T) {
 			So(c.token, ShouldEqual, "token")
 			So(c.tokenExpire, ShouldEqual, 110)
 			So(c.Token(), ShouldEqual, "token")
+		})
+		Convey("Bad url", func() {
+			Convey("Request", func() {
+				resp := new(http.Response)
+				resp.Header = http.Header{}
+				resp.Header.Add("X-Expire-Auth-Token", "110")
+				resp.Header.Add("X-Auth-Token", "token")
+				resp.Header.Add("X-Storage-Url", "https://xxx.selcdn.ru/")
+				resp.StatusCode = http.StatusNoContent
+				c.setClient(NewTestClientSimple(resp))
+				So(c.Auth("user", "key"), ShouldBeNil)
+				So(c.storageURL.String(), ShouldEqual, "https://xxx.selcdn.ru/")
+				forceBadURL(c)
+				_, err := c.NewRequest("GET", nil)
+				So(err, ShouldNotBeNil)
+			})
+			Convey("Header", func() {
+				resp := new(http.Response)
+				resp.Header = http.Header{}
+				resp.Header.Add("X-Expire-Auth-Token", "110")
+				resp.Header.Add("X-Auth-Token", "token")
+				resp.Header.Add("X-Storage-Url", invalidHost)
+				resp.StatusCode = http.StatusNoContent
+				c.setClient(NewTestClientSimple(resp))
+				So(c.Auth("user", "key"), ShouldNotBeNil)
+			})
 		})
 		Convey("Bad credentianls", func() {
 			So(c.Auth("", "key"), ShouldEqual, ErrorBadCredentials)
