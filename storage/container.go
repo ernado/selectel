@@ -109,13 +109,22 @@ func (c *Container) Object(name string) ObjectAPI {
 	return object
 }
 
+// ObjectsInfo returns information about all objects in container
 func (c *Container) ObjectsInfo() ([]ObjectInfo, error) {
-	info := []ObjectInfo{}
-	return info, nil
+	return c.api.ObjectsInfo(c.name)
 }
 
+// Objects returns all object from container
 func (c *Container) Objects() ([]ObjectAPI, error) {
-	return nil, nil
+	info, err := c.ObjectsInfo()
+	if err != nil {
+		return nil, err
+	}
+	objects := []ObjectAPI{}
+	for _, object := range info {
+		objects = append(objects, c.Object(object.Name))
+	}
+	return objects, nil
 }
 
 // C is shortcut to Client.Container

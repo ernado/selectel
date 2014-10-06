@@ -105,6 +105,97 @@ func TestMethods(t *testing.T) {
 					So(info[1].LastModified.Second(), ShouldEqual, 49)
 					So(info[1].LastModified.Nanosecond(), ShouldEqual, 7590000)
 				})
+				Convey("Not found", func() {
+					callback := func(req *http.Request) (*http.Response, error) {
+						resp := new(http.Response)
+						resp.StatusCode = http.StatusNotFound
+						So(req.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container?format=json")
+						So(req.Method, ShouldEqual, "GET")
+						resp.Body = ioutil.NopCloser(bytes.NewBufferString(sample))
+						return resp, nil
+					}
+					c.setClient(NewTestClient(callback))
+					_, err := c.ObjectsInfo("container")
+					So(err, ShouldEqual, ErrorObjectNotFound)
+				})
+				Convey("Bad json", func() {
+					sample := `
+					[
+						{
+							"kek"
+						    "bytes": 31,
+						    "content_type": "text/html",
+						    "downloaded": 4,
+						    "hash": "b302ffc3b75770453e96c1348e30eb93",
+						    "last_modified": "2022213-0a5-27T14:42:04.669760",
+						    "name": "my_index.html",,,,,,,,,,,,,,,,,,,,,,,,,,
+						},
+						{
+						    "bytes": 1024,
+						    "content_type": "application/octet-stream",
+						    "downloaded": 123,
+						    "hash": "0f343b0931126a20f133d67c2b018a3b",
+						    "last_modified": "2013-05-27T13:16:49.007590",
+						    "name": "new_object"
+						}
+					]`
+					callback := func(req *http.Request) (*http.Response, error) {
+						resp := new(http.Response)
+						resp.StatusCode = http.StatusOK
+						So(req.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container?format=json")
+						So(req.Method, ShouldEqual, "GET")
+						resp.Body = ioutil.NopCloser(bytes.NewBufferString(sample))
+						return resp, nil
+					}
+					c.setClient(NewTestClient(callback))
+					_, err := c.ObjectsInfo("container")
+					So(err, ShouldEqual, ErrorBadJSON)
+				})
+				Convey("Bad time", func() {
+					sample := `
+					[
+						{
+						    "bytes": 31,
+						    "content_type": "text/html",
+						    "downloaded": 4,
+						    "hash": "b302ffc3b75770453e96c1348e30eb93",
+						    "last_modified": "2022213-0a5-27T14:42:04.669760",
+						    "name": "my_index.html"
+						},
+						{
+						    "bytes": 1024,
+						    "content_type": "application/octet-stream",
+						    "downloaded": 123,
+						    "hash": "0f343b0931126a20f133d67c2b018a3b",
+						    "last_modified": "2013-05-27T13:16:49.007590",
+						    "name": "new_object"
+						}
+					]`
+					callback := func(req *http.Request) (*http.Response, error) {
+						resp := new(http.Response)
+						resp.StatusCode = http.StatusOK
+						So(req.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container?format=json")
+						So(req.Method, ShouldEqual, "GET")
+						resp.Body = ioutil.NopCloser(bytes.NewBufferString(sample))
+						return resp, nil
+					}
+					c.setClient(NewTestClient(callback))
+					_, err := c.ObjectsInfo("container")
+					So(err, ShouldNotBeNil)
+				})
+				Convey("Bad responce", func() {
+					callback := func(req *http.Request) (*http.Response, error) {
+						resp := new(http.Response)
+						resp.StatusCode = http.StatusTeapot
+						So(req.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container?format=json")
+						So(req.Method, ShouldEqual, "GET")
+						resp.Body = ioutil.NopCloser(bytes.NewBufferString(sample))
+						return resp, nil
+					}
+					c.setClient(NewTestClient(callback))
+					_, err := c.ObjectsInfo("container")
+					So(err, ShouldEqual, ErrorBadResponce)
+				})
 				Convey("Auth error", func() {
 					c.setClient(NewTestClientError(nil, ErrorAuth))
 					_, err := c.ObjectsInfo("c")

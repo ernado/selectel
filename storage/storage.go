@@ -44,6 +44,8 @@ var (
 	ErrorBadResponce = errors.New("Unable to process api responce")
 	// ErrorBadName
 	ErrorBadName = errors.New("Bad container/object name provided")
+	// ErrorBadJSON occurs on unmarhalling error
+	ErrorBadJSON = errors.New("Unable to parse api responce")
 )
 
 // Client is selectel storage api client
@@ -83,6 +85,7 @@ type API interface {
 	RemoveContainer(name string) error
 	// ObjectInfo returns information about object in container
 	ObjectInfo(container, filename string) (f ObjectInfo, err error)
+	ObjectsInfo(container string) ([]ObjectInfo, error)
 	ContainerInfo(name string) (info ContainerInfo, err error)
 	ContainersInfo() ([]ContainerInfo, error)
 	Containers() ([]ContainerAPI, error)
@@ -118,7 +121,7 @@ func (c *Client) ContainersInfo() ([]ContainerInfo, error) {
 	}
 	decoder := json.NewDecoder(res.Body)
 	if err := decoder.Decode(&info); err != nil {
-		return nil, err
+		return nil, ErrorBadJSON
 	}
 	return info, nil
 }
@@ -136,6 +139,7 @@ func (c *Client) Containers() ([]ContainerAPI, error) {
 	return containers, nil
 }
 
+// ObjectsInfo returns information about all objects in container
 func (c *Client) ObjectsInfo(container string) ([]ObjectInfo, error) {
 	info := []ObjectInfo{}
 	request, err := c.NewRequest(getMethod, nil, container)
@@ -158,7 +162,7 @@ func (c *Client) ObjectsInfo(container string) ([]ObjectInfo, error) {
 	}
 	decoder := json.NewDecoder(res.Body)
 	if err := decoder.Decode(&info); err != nil {
-		return nil, err
+		return nil, ErrorBadJSON
 	}
 	for i, v := range info {
 		info[i].LastModified, err = time.Parse(fileLastModifiedLayout, v.LastModifiedStr)
