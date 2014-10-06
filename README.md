@@ -3,11 +3,11 @@
 Selectel api
 =======
 ```
-  Language  Files  Code  Comment  Blank  Total
-     Total     11  1646      103    108   1857
-        Go     11  1646      103    108   1857
+    Language  Files   Code  Comment  Blank  Total
+          Go     11   2093      132    114   2339
+    Markdown      1     22        0      8     30
 
-  Assertions: 573
+  Assertions: ~700
   Integrational tests included
 ```
 
@@ -16,5 +16,15 @@ Selectel api
 [![GoDoc](https://godoc.org/github.com/ernado/selectel?status.svg)](https://godoc.org/github.com/ernado/selectel)
 [![Documentation Status](https://readthedocs.org/projects/selectel-api/badge/?version=latest)](http://selectel-api.readthedocs.org/en/latest/)
 
+Usage
+=======
+
+```bash
+go get github.com/ernado/selectel
+```
+
+```golang
+import "github.com/ernado/selectel/storage"
+```
 
 
