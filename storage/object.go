@@ -94,7 +94,7 @@ func (o *Object) Download() ([]byte, error) {
 }
 
 func (o *Object) GetReader() (io.ReadCloser, error) {
-	request, _ := http.NewRequest("GET", o.container.URL(o.name), nil)
+	request, _ := http.NewRequest(getMethod, o.container.URL(o.name), nil)
 	res, err := o.api.Do(request)
 	if err != nil {
 		return nil, err
