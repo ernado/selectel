@@ -23,8 +23,39 @@ Usage
 go get github.com/ernado/selectel
 ```
 
+Example: 
 ```golang
-import "github.com/ernado/selectel/storage"
+package main
+
+import (
+	"fmt"
+	"github.com/ernado/selectel/storage"
+	"log"
+)
+
+const (
+	user = "123456"
+	key  = "password"
+)
+
+func main() {
+	api, err := storage.New(user, key)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	info := api.Info()
+	fmt.Printf("Used %d bytes\n", info.BytesUsed)
+
+	containers, _ := api.Containers()
+	fmt.Printf("You have %d containers\n", len(containers))
+
+	for _, container := range containers {
+		objects, _ := container.Objects()
+		fmt.Printf("Container %s has %d objects\n", container.Name(), len(objects))
+	}
+}
+
 ```
 
 
