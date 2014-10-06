@@ -16,15 +16,16 @@ Selectel api
 [![GoDoc](https://godoc.org/github.com/ernado/selectel?status.svg)](https://godoc.org/github.com/ernado/selectel)
 [![Documentation Status](https://readthedocs.org/projects/selectel-api/badge/?version=latest)](http://selectel-api.readthedocs.org/en/latest/)
 
-Usage
+Storage
 =======
 
+### Installation
 ```bash
-go get github.com/ernado/selectel
+go get github.com/ernado/selectel/storage
 ```
 
-Example: 
-```golang
+### Example 
+```go
 package main
 
 import (
