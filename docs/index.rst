@@ -7,7 +7,7 @@ Welcome to Selectel API's documentation!
 ========================================
 
 .. image:: https://travis-ci.org/ernado/selectel.png?branch=master
-	:target: https://coveralls.io/r/ernado/selectel?branch=master
+	:target: https://travis-ci.org/ernado/selectel
 	                
 .. image:: https://coveralls.io/repos/ernado/selectel/badge.png?branch=master
 	:target: https://coveralls.io/r/ernado/selectel?branch=master
@@ -17,7 +17,7 @@ Welcome to Selectel API's documentation!
 	:alt: Godoc reference
 
 .. image:: https://readthedocs.org/projects/selectel-api/badge/?version=latest
-	:target: https://readthedocs.org/projects/selectel-api/?badge=latest
+	:target: http://selectel-api.readthedocs.org/en/latest/
 	:alt: Documentation Status
 
 Contents:
