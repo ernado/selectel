@@ -74,7 +74,7 @@ func (c *Client) Auth(user, key string) error {
 
 // Expired returns true if token is expired or does not exist
 func (c *Client) Expired() bool {
-	if c.expireFrom == nil {
+	if c.expireFrom == nil || blank(c.token) {
 		return true
 	}
 	duration := time.Duration(c.tokenExpire) * time.Second
