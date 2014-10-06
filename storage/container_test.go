@@ -331,5 +331,12 @@ func TestContainerMethods(t *testing.T) {
 			c.setClient(NewTestClient(callback))
 			So(c.Container(container).UploadFile(filename), ShouldBeNil)
 		})
+		Convey("Objects", func() {
+			Convey("Auth error", func() {
+				c.setClient(NewTestClientError(nil, ErrorAuth))
+				_, err := c.Container("container").Objects()
+				So(err, ShouldEqual, ErrorAuth)
+			})
+		})
 	})
 }

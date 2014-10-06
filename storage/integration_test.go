@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -186,6 +187,18 @@ func TestIntegration(t *testing.T) {
 					containers, err := c.Containers()
 					So(err, ShouldBeNil)
 					So(len(containers), ShouldNotEqual, 0)
+					for _, container := range containers {
+						if !strings.Contains(container.Name(), "test_") {
+							continue
+						}
+						log.Println("removing container")
+						objects, err := container.Objects()
+						So(err, ShouldBeNil)
+						for _, object := range objects {
+							So(object.Remove(), ShouldBeNil)
+						}
+						So(container.Remove(), ShouldBeNil)
+					}
 				})
 			})
 			Convey("Upload", func() {
