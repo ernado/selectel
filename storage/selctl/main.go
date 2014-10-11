@@ -82,9 +82,7 @@ func connect(c cli.Command) {
 
 	if cache {
 		api, err = storage.NewFromCache(cacheFilename)
-		if err != nil && err != os.ErrNotExist {
-			log.Println("unable to load from cache:", err)
-		} else {
+		if err == nil {
 			return
 		}
 	} else {
@@ -111,8 +109,6 @@ func wrap(callback func(cli.Command)) func(cli.Command) {
 			if cache {
 				if err := api.SaveToCache(cacheFilename); err != nil {
 					log.Println("unable to save to cache:", err)
-				} else {
-					log.Println("saved to cache")
 				}
 			}
 		}()
