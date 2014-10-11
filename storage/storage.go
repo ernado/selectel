@@ -58,6 +58,7 @@ type Client struct {
 	key         string
 	client      DoClient
 	file        fileMock
+	debug       bool
 }
 
 // StorageInformation contains some usefull metrics about storage for current user
@@ -76,6 +77,7 @@ type API interface {
 	Upload(reader io.Reader, container, filename, t string) error
 	UploadFile(filename, container string) error
 	Auth(user, key string) error
+	Debug(debug bool)
 	Token() string
 	C(string) ContainerAPI
 	Container(string) ContainerAPI
@@ -99,6 +101,10 @@ type DoClient interface {
 // setClient sets client
 func (c *Client) setClient(client DoClient) {
 	c.client = client
+}
+
+func (c *Client) Debug(debug bool) {
+	c.debug = debug
 }
 
 // ContainersInfo return all container-specific information from storage
@@ -242,19 +248,26 @@ func (c *Client) do(request *http.Request) (res *http.Response, err error) {
 	if !blank(c.token) {
 		request.Header.Add(authTokenHeader, c.token)
 	}
-	// perform request and record time elapsed
-	start := time.Now().Truncate(time.Millisecond)
-	res, err = c.client.Do(request)
-	stop := time.Now().Truncate(time.Millisecond)
-	duration := stop.Sub(start)
-	// log error
-	if err != nil {
-		log.Println(request.Method, request.URL.String(), err, duration)
-		return
+	if c.debug {
+		// perform request and record time elapsed
+		start := time.Now().Truncate(time.Millisecond)
+		res, err = c.client.Do(request)
+		stop := time.Now().Truncate(time.Millisecond)
+		duration := stop.Sub(start)
+		// log error
+		if err != nil {
+			log.Println(request.Method, request.URL.String(), err, duration)
+			return
+		}
+		// log request
+		log.Println(request.Method, request.URL.String(), res.StatusCode, duration)
+		// check for auth code
+	} else {
+		res, err = c.client.Do(request)
+		if err != nil {
+			return
+		}
 	}
-	// log request
-	log.Println(request.Method, request.URL.String(), res.StatusCode, duration)
-	// check for auth code
 	if res.StatusCode == http.StatusUnauthorized {
 		c.expireFrom = nil // ensure that next request will force authentication
 		return nil, ErrorAuth
