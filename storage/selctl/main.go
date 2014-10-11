@@ -29,18 +29,32 @@ var (
 func init() {
 	client.DefineBoolFlagVar(&debug, "debug", false, "debug mode")
 	client.DefineStringFlag("key", "", fmt.Sprintf("selectel storage key (%s)", envKey))
+	client.AliasFlag('k', "key")
 	client.DefineStringFlag("user", "", fmt.Sprintf("selectel storage user (%s)", envUser))
+	client.AliasFlag('u', "user")
 	client.DefineStringFlag("container", "", fmt.Sprintf("default container (%s)", envContainer))
+	client.AliasFlag('c', "container")
+
 	infoCommand := client.DefineSubCommand("info", "print information about storage/container/object", wrap(info))
 	infoCommand.DefineStringFlag("type", "storage", "storage, container or object")
-	client.DefineSubCommand("upload", "upload object to container", wrap(upload))
+	infoCommand.AliasFlag('t', "type")
+
 	listCommand := client.DefineSubCommand("list", "list objects in container/storage", wrap(list))
 	listCommand.DefineStringFlag("type", "storage", "storage or container")
+	listCommand.AliasFlag('t', "type")
+
+	client.DefineSubCommand("upload", "upload object to container", wrap(upload))
 	downloadCommand := client.DefineSubCommand("download", "download object from container", wrap(download))
 	downloadCommand.DefineStringFlag("path", "", "destination path")
+	downloadCommand.AliasFlag('p', "path")
+
+	client.DefineSubCommand("create", "create container", wrap(create))
+
 	removeCommand := client.DefineSubCommand("remove", "remove object or container", wrap(remove))
 	removeCommand.DefineStringFlag("type", "object", "container or object")
-	client.DefineSubCommand("create", "create container", wrap(create))
+	removeCommand.DefineBoolFlag("force", false, "remove container with files")
+	removeCommand.AliasFlag('f', "force")
+	removeCommand.AliasFlag('t', "type")
 }
 
 func readFlag(c cli.Command, name, env string) string {
@@ -143,6 +157,7 @@ func remove(c cli.Command) {
 		object  string
 		err     error
 		message string
+		objects []storage.ObjectAPI
 	)
 	if arglen == 2 {
 		container = c.Arg(0).String()
@@ -159,7 +174,25 @@ func remove(c cli.Command) {
 		log.Fatal(errorNotEnough)
 	}
 	if blank(object) {
-		err = api.Container(container).Remove()
+		containerApi := api.Container(container)
+		err = containerApi.Remove()
+
+		// forced removal of container
+		if err == storage.ErrorConianerNotEmpty && c.Flag("force").Get().(bool) {
+			fmt.Println("removing all objects of", container)
+			objects, err = containerApi.Objects()
+			if err != nil {
+				log.Fatal(err)
+			}
+			for _, object := range objects {
+				err = object.Remove()
+				// skipping NotFound errors as non-critical
+				if err != nil && err != storage.ErrorObjectNotFound {
+					log.Fatal(err)
+				}
+			}
+			err = containerApi.Remove()
+		}
 		message = fmt.Sprintf("container %s removed", container)
 	} else {
 		err = api.Container(container).Object(object).Remove()
