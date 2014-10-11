@@ -1,37 +1,96 @@
 package main
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"github.com/ernado/selectel/storage"
 	"github.com/jwaldrip/odin/cli"
 	"github.com/olekukonko/tablewriter"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 )
 
 const (
 	envKey        = storage.EnvKey
 	envUser       = storage.EnvUser
-	cacheFilename = ".~selct.cache"
-	envCache      = "SELCTL_CACHE"
+	version       = "1.1"
+	cacheFilename = "~selct.cache~" + version
+	envCache      = "SELECTEL_CACHE"
 	envContainer  = "SELECTEL_CONTAINER"
 )
 
 var (
-	client         = cli.New("0.1", "Selectel storage command line client", connect)
+	client         = cli.New(version, "Selectel storage command line client", connect)
 	user, key      string
 	container      string
 	api            storage.API
 	debug          bool
 	cache          bool
+	cacheSecure    bool
 	errorNotEnough = errors.New("Not enought arguments")
 )
 
+func encryptionKey() []byte {
+	hasher := sha256.New()
+	hasher.Write([]byte("selectel storage command line client"))
+	hasher.Write([]byte(key))
+	hasher.Write([]byte(user))
+	return hasher.Sum(nil)
+}
+
+func encrypt(data []byte) []byte {
+	block, err := aes.NewCipher(encryptionKey())
+	if err != nil {
+		panic(err)
+	}
+
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	ciphertext := make([]byte, aes.BlockSize+len(data))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		panic(err)
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], data)
+	return ciphertext
+}
+
+// decrypt from base64 to decrypted string
+func decrypt(data []byte) ([]byte, error) {
+	block, err := aes.NewCipher(encryptionKey())
+	if err != nil {
+		return nil, err
+	}
+
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	if len(data) < aes.BlockSize {
+		return nil, errors.New("ciphertext too short")
+	}
+	iv := data[:aes.BlockSize]
+	data = data[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+
+	// XORKeyStream can work in-place if the two arguments are the same.
+	stream.XORKeyStream(data, data)
+
+	return data, nil
+}
+
 func init() {
 	client.DefineBoolFlagVar(&debug, "debug", false, "debug mode")
-	client.DefineBoolFlagVar(&cache, "cache", false, "cache credentials")
+	client.DefineBoolFlagVar(&cache, "cache", false, fmt.Sprintf("cache credentials in file (%s)", envCache))
+	client.DefineBoolFlagVar(&cacheSecure, "cache.secure", true, "encrypt/decrypt token with user-key pair")
 	client.DefineStringFlag("key", "", fmt.Sprintf("selectel storage key (%s)", envKey))
 	client.AliasFlag('k', "key")
 	client.DefineStringFlag("user", "", fmt.Sprintf("selectel storage user (%s)", envUser))
@@ -72,6 +131,21 @@ func blank(s string) bool {
 	return len(s) == 0
 }
 
+func load() ([]byte, error) {
+	f, err := os.Open(cacheFilename)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	if !cacheSecure {
+		return data, nil
+	}
+	return decrypt(data)
+}
+
 // connect reads credentials and performs auth
 func connect(c cli.Command) {
 	var err error
@@ -80,10 +154,20 @@ func connect(c cli.Command) {
 	user = readFlag(c, "user", envUser)
 	container = readFlag(c, "container", envContainer)
 
+	if strings.ToLower(os.Getenv(envCache)) == "true" {
+		cache = true
+	}
+
 	if cache {
-		api, err = storage.NewFromCache(cacheFilename)
-		if err == nil {
-			return
+		var data []byte
+		data, err = load()
+		if err != nil {
+			log.Println(err)
+		} else {
+			api, err = storage.NewFromCache(data)
+			if err == nil {
+				return
+			}
 		}
 	} else {
 		os.Remove(cacheFilename)
@@ -107,8 +191,20 @@ func wrap(callback func(cli.Command)) func(cli.Command) {
 		connect(c.Parent())
 		defer func() {
 			if cache {
-				if err := api.SaveToCache(cacheFilename); err != nil {
-					log.Println("unable to save to cache:", err)
+				data, err := api.Dump()
+				if err != nil {
+					panic(err)
+				}
+				if cacheSecure {
+					data = encrypt(data)
+				}
+				f, err := os.Create(cacheFilename)
+				if err != nil {
+					panic(err)
+				}
+				_, err = f.Write(data)
+				if err != nil {
+					panic(err)
 				}
 			}
 		}()
