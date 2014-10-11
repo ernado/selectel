@@ -82,7 +82,7 @@ func decrypt(data []byte) ([]byte, error) {
 
 func init() {
 	client.DefineBoolFlagVar(&debug, "debug", false, "debug mode")
-	client.DefineBoolFlagVar(&cache, "cache", false, fmt.Sprintf("cache credentials in file (%s)", envCache))
+	client.DefineBoolFlagVar(&cache, "cache", false, fmt.Sprintf("cache token in file (%s)", envCache))
 	client.DefineBoolFlagVar(&cacheSecure, "cache.secure", true, "encrypt/decrypt token with user-key pair (true by default)")
 	client.DefineStringFlag("key", "", fmt.Sprintf("selectel storage key (%s)", envKey))
 	client.AliasFlag('k', "key")
