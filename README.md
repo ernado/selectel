@@ -59,4 +59,32 @@ func main() {
 
 ```
 
+### Console client
 
+#### Installation
+
+```bash
+go get github.com/ernado/selectel/storage/selctl	
+```
+
+#### Usage
+
+```bash
+$ selctl -h
+
+Usage:
+  selctl [options...] <command> [arg...]
+
+Selectel storage command line client
+
+Options:
+  --container=""  # default container (SELECTEL_CONTAINER)
+  --debug         # debug mode
+  -h, --help      # show help and exit
+  --key=""        # selectel storage key (SELECTEL_KEY)
+  --user=""       # selectel storage user (SELECTEL_USER)
+  -v, --version   # show version and exit
+
+Commands:
+  info     print information about storage/container/object
+```
