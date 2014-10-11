@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -70,14 +71,13 @@ type ClientCredentials struct {
 	URL        string
 }
 
-func NewFromCache(filename string) (API, error) {
-	var cache = new(ClientCredentials)
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	decorer := gob.NewDecoder(f)
-	if err := decorer.Decode(cache); err != nil {
+func NewFromCache(data []byte) (API, error) {
+	var (
+		cache = new(ClientCredentials)
+		err   error
+	)
+	decorer := gob.NewDecoder(bytes.NewBuffer(data))
+	if err = decorer.Decode(cache); err != nil {
 		return nil, err
 	}
 	c := newClient(new(http.Client))
@@ -102,14 +102,13 @@ func (c *Client) Credentials() (cache ClientCredentials) {
 	return cache
 }
 
-func (c *Client) SaveToCache(filename string) error {
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
+func (c *Client) Dump() ([]byte, error) {
+	buffer := new(bytes.Buffer)
+	encoder := gob.NewEncoder(buffer)
+	if err := encoder.Encode(c.Credentials()); err != nil {
+		return nil, err
 	}
-	defer f.Close()
-	encoder := gob.NewEncoder(f)
-	return encoder.Encode(c.Credentials())
+	return buffer.Bytes(), nil
 }
 
 // StorageInformation contains some usefull metrics about storage for current user
@@ -143,7 +142,7 @@ type API interface {
 	ContainersInfo() ([]ContainerInfo, error)
 	Containers() ([]ContainerAPI, error)
 	Credentials() (cache ClientCredentials)
-	SaveToCache(filename string) error
+	Dump() ([]byte, error)
 }
 
 // DoClient is mock of http.Client
