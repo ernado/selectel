@@ -47,6 +47,43 @@ func TestContainerMethods(t *testing.T) {
 				So(info.Type, ShouldEqual, "private")
 				So(info.ObjectCount, ShouldEqual, 140)
 			})
+			Convey("Ok", func() {
+				/*
+					Content-Length: 0
+					X-Container-Object-Count: 5
+					Accept-Ranges: bytes
+					X-Container-Bytes-Used: 267806664
+					X-Timestamp: 1386531656.46589
+					X-Container-Meta-Type: public
+					Content-Type: text/plain; charset=utf-8
+					X-Container-Domains: sel.cydev.ru
+					X-Transfered-Bytes: 424663270
+					X-Received-Bytes: 477412033
+					Access-Control-Allow-Origin: *
+					Access-Control-Expose-Headers: X-Container-Object-Count, X-Container-Bytes-Used, X-Timestamp, X-Container-Meta-Type, X-Container-Domains, X-Transfered-Bytes, X-Received-Bytes
+					Expires: 0
+					Pragma: no-cache
+					Cache-Control: no-cache, no-store, must-revalidate
+				*/
+				callback := func(req *http.Request) (*http.Response, error) {
+					resp := new(http.Response)
+					resp.Header = http.Header{}
+					So(req.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/name")
+					So(req.Method, ShouldEqual, "HEAD")
+					resp.Header.Add("X-Container-Object-Count", "5")
+					resp.Header.Add("X-Container-Bytes-Used", "267806664")
+					resp.Header.Add("X-Container-Meta-Type", "public")
+					resp.Header.Add("X-Received-Bytes", "424663270")
+					resp.Header.Add("X-Transfered-Bytes", "477412033")
+					resp.Header.Add("Content-Length", "0")
+					resp.Header.Add("X-Container-Domains", "sel.cydev.ru")
+					resp.StatusCode = http.StatusNoContent
+					return resp, nil
+				}
+				c.setClient(NewTestClient(callback))
+				_, err := c.ContainerInfo("name")
+				So(err, ShouldBeNil)
+			})
 			Convey("Bad responce", func() {
 				resp := new(http.Response)
 				resp.Header = http.Header{}

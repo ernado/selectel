@@ -54,6 +54,7 @@ type ContainerAPI interface {
 	Object(name string) ObjectAPI
 	ObjectsInfo() ([]ObjectInfo, error)
 	Objects() ([]ObjectAPI, error)
+	Info() (info ContainerInfo, err error)
 }
 
 // Upload reads all data from reader and uploads to contaier with filename and content type
@@ -127,6 +128,10 @@ func (c *Container) Objects() ([]ObjectAPI, error) {
 	return objects, nil
 }
 
+func (c *Container) Info() (info ContainerInfo, err error) {
+	return c.api.ContainerInfo(c.name)
+}
+
 // C is shortcut to Client.Container
 func (c *Client) C(name string) ContainerAPI {
 	container := new(Container)
@@ -189,7 +194,7 @@ func (c *Client) RemoveContainer(name string) error {
 }
 
 func (c *Client) ContainerInfo(name string) (info ContainerInfo, err error) {
-	req, err := c.NewRequest(getMethod, nil, name)
+	req, err := c.NewRequest(headMethod, nil, name)
 	if err != nil {
 		return
 	}

@@ -70,6 +70,10 @@ func TestIntegration(t *testing.T) {
 			So(info.ObjectCount, ShouldNotEqual, 0)
 			So(info.ContainerCount, ShouldNotEqual, 0)
 		})
+		Convey("ContainerInfo", func() {
+			_, err := c.Container("cydev").Info()
+			So(err, ShouldBeNil)
+		})
 		Convey("Upload", func() {
 			uploadData := randData(512)
 			hashByte := md5.Sum(uploadData)
