@@ -89,8 +89,9 @@ Commands:
   info     print information about storage/container/object
 
 $ selctl info cydev main.go
-# {Size:304 ContentType:application/octet-stream Downloaded:0 \
-# Hash:f9126007fe5ac982caa9b86ad06158a9 LastModifiedStr: LastModified:2014-09-21 00:39:25 +0000 GMT 
+# {Size:304 ContentType:application/octet-stream Downloaded:0
+# Hash:f9126007fe5ac982caa9b86ad06158a9 
+# LastModifiedStr: LastModified:2014-09-21 00:39:25 +0000 GMT 
 # Name:main.go}
 
 ```
