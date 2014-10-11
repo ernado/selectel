@@ -12,9 +12,11 @@ import (
 )
 
 const (
-	envKey       = storage.EnvKey
-	envUser      = storage.EnvUser
-	envContainer = "SELECTEL_CONTAINER"
+	envKey        = storage.EnvKey
+	envUser       = storage.EnvUser
+	cacheFilename = ".~selct.cache"
+	envCache      = "SELCTL_CACHE"
+	envContainer  = "SELECTEL_CONTAINER"
 )
 
 var (
@@ -23,11 +25,13 @@ var (
 	container      string
 	api            storage.API
 	debug          bool
+	cache          bool
 	errorNotEnough = errors.New("Not enought arguments")
 )
 
 func init() {
 	client.DefineBoolFlagVar(&debug, "debug", false, "debug mode")
+	client.DefineBoolFlagVar(&cache, "cache", false, "cache credentials")
 	client.DefineStringFlag("key", "", fmt.Sprintf("selectel storage key (%s)", envKey))
 	client.AliasFlag('k', "key")
 	client.DefineStringFlag("user", "", fmt.Sprintf("selectel storage user (%s)", envUser))
@@ -70,27 +74,48 @@ func blank(s string) bool {
 
 // connect reads credentials and performs auth
 func connect(c cli.Command) {
+	var err error
+
 	key = readFlag(c, "key", envKey)
 	user = readFlag(c, "user", envUser)
 	container = readFlag(c, "container", envContainer)
 
+	if cache {
+		api, err = storage.NewFromCache(cacheFilename)
+		if err != nil && err != os.ErrNotExist {
+			log.Println("unable to load from cache:", err)
+		} else {
+			return
+		}
+	} else {
+		os.Remove(cacheFilename)
+	}
+
 	// checking for blank credentials
-	if blank(key) || blank(user) {
+	if blank(key) || blank(user) && api != nil {
 		log.Fatal(storage.ErrorBadCredentials)
 	}
 
 	// connencting to api
-	var err error
-	api, err = storage.New(user, key)
-	if err != nil {
+	api = storage.NewAsync(user, key)
+	api.Debug(debug)
+	if err = api.Auth(user, key); err != nil {
 		log.Fatal(err)
 	}
-	api.Debug(debug)
 }
 
 func wrap(callback func(cli.Command)) func(cli.Command) {
 	return func(c cli.Command) {
 		connect(c.Parent())
+		defer func() {
+			if cache {
+				if err := api.SaveToCache(cacheFilename); err != nil {
+					log.Println("unable to save to cache:", err)
+				} else {
+					log.Println("saved to cache")
+				}
+			}
+		}()
 		callback(c)
 	}
 }

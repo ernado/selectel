@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,6 +62,65 @@ type Client struct {
 	debug       bool
 }
 
+type ClientCredentials struct {
+	Token      string
+	Key        string
+	User       string
+	Debug      bool
+	Expire     int
+	ExpireFrom *time.Time
+	URL        string
+}
+
+func NewFromCache(filename string) (API, error) {
+	var cache = new(ClientCredentials)
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	decorer := gob.NewDecoder(f)
+	if err := decorer.Decode(cache); err != nil {
+		return nil, err
+	}
+	c := newClient(new(http.Client))
+	if blank(cache.User) || blank(cache.Key) {
+		return nil, ErrorBadCredentials
+	}
+	c.user = cache.User
+	c.key = cache.Key
+	c.token = cache.Token
+	c.tokenExpire = cache.Expire
+	c.debug = cache.Debug
+	c.expireFrom = cache.ExpireFrom
+	c.storageURL, err = url.Parse(cache.URL)
+	if err != nil {
+		return nil, ErrorBadCredentials
+	}
+	return c, nil
+}
+
+func (c *Client) Credentials() (cache ClientCredentials) {
+	cache.User = c.user
+	cache.Key = c.key
+	cache.URL = c.storageURL.String()
+	cache.Expire = c.tokenExpire
+	cache.ExpireFrom = c.expireFrom
+	cache.Token = c.token
+	cache.Debug = c.debug
+
+	return cache
+}
+
+func (c *Client) SaveToCache(filename string) error {
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	encoder := gob.NewEncoder(f)
+	return encoder.Encode(c.Credentials())
+}
+
 // StorageInformation contains some usefull metrics about storage for current user
 type StorageInformation struct {
 	ObjectCount     uint64
@@ -91,6 +151,8 @@ type API interface {
 	ContainerInfo(name string) (info ContainerInfo, err error)
 	ContainersInfo() ([]ContainerInfo, error)
 	Containers() ([]ContainerAPI, error)
+	Credentials() (cache ClientCredentials)
+	SaveToCache(filename string) error
 }
 
 // DoClient is mock of http.Client
