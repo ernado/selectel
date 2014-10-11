@@ -4,8 +4,8 @@ Selectel api
 =======
 ```
     Language  Files   Code  Comment  Blank  Total
-          Go     12   2246      153    129   2528
-    Markdown      1     73        0     25     98
+          Go     12   2554      155    157   2866
+    Markdown      1     82        0     25     98
 
   Assertions: ~747
   Integrational tests included
@@ -82,15 +82,22 @@ Usage:
 Selectel storage command line client
 
 Options:
-  --container=""  # default container (SELECTEL_CONTAINER)
-  --debug         # debug mode
-  -h, --help      # show help and exit
-  --key=""        # selectel storage key (SELECTEL_KEY)
-  --user=""       # selectel storage user (SELECTEL_USER)
-  -v, --version   # show version and exit
+  --cache             # cache credentials in file (SELECTEL_CACHE)
+  --cache.secure      # encrypt/decrypt token with user-key pair
+  -c, --container=""  # default container (SELECTEL_CONTAINER)
+  --debug             # debug mode
+  -h, --help          # show help and exit
+  -k, --key=""        # selectel storage key (SELECTEL_KEY)
+  -u, --user=""       # selectel storage user (SELECTEL_USER)
+  -v, --version       # show version and exit
 
 Commands:
-  info     print information about storage/container/object
+  upload       upload object to container
+  download     download object from container
+  create       create container
+  remove       remove object or container
+  info         print information about storage/container/object
+  list         list objects in container/storage
 
 $ selctl info cydev main.go
 # {Size:304 ContentType:application/octet-stream Downloaded:0
