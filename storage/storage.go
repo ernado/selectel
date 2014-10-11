@@ -64,8 +64,6 @@ type Client struct {
 
 type ClientCredentials struct {
 	Token      string
-	Key        string
-	User       string
 	Debug      bool
 	Expire     int
 	ExpireFrom *time.Time
@@ -83,11 +81,6 @@ func NewFromCache(filename string) (API, error) {
 		return nil, err
 	}
 	c := newClient(new(http.Client))
-	if blank(cache.User) || blank(cache.Key) {
-		return nil, ErrorBadCredentials
-	}
-	c.user = cache.User
-	c.key = cache.Key
 	c.token = cache.Token
 	c.tokenExpire = cache.Expire
 	c.debug = cache.Debug
@@ -100,8 +93,6 @@ func NewFromCache(filename string) (API, error) {
 }
 
 func (c *Client) Credentials() (cache ClientCredentials) {
-	cache.User = c.user
-	cache.Key = c.key
 	cache.URL = c.storageURL.String()
 	cache.Expire = c.tokenExpire
 	cache.ExpireFrom = c.expireFrom
