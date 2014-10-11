@@ -15,7 +15,7 @@ Selectel api
 [![Coverage Status](https://img.shields.io/coveralls/ernado/selectel.svg)](https://coveralls.io/r/ernado/selectel)
 [![GoDoc](https://godoc.org/github.com/ernado/selectel?status.svg)](https://godoc.org/github.com/ernado/selectel)
 [![Documentation Status](https://readthedocs.org/projects/selectel-api/badge/?version=latest)](http://selectel-api.readthedocs.org/en/latest/)
-[![Go Walker](http://gowalker.org/api/v1/badge)](https://gowalker.org/github.com/ernado/selecte)
+[![Go Walker](http://gowalker.org/api/v1/badge)](https://gowalker.org/github.com/ernado/selectel)
 
 
 Storage
