@@ -62,7 +62,6 @@ func encrypt(data []byte) []byte {
 	return ciphertext
 }
 
-// decrypt from base64 to decrypted string
 func decrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(encryptionKey())
 	if err != nil {
