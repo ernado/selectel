@@ -3,7 +3,6 @@ package storage
 import (
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -159,7 +158,6 @@ func (c *Client) CreateContainer(name string, private bool) (ContainerAPI, error
 		containerType = containerPrivate
 	}
 	req.Header.Add(containerMetaTypeHeader, containerType)
-	log.Println(containerMetaTypeHeader, containerType)
 	res, err := c.Do(req)
 	if err != nil {
 		return nil, err

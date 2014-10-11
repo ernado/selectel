@@ -38,6 +38,9 @@ func init() {
 	listCommand.DefineStringFlag("type", "storage", "storage or container")
 	downloadCommand := client.DefineSubCommand("download", "download object from container", wrap(download))
 	downloadCommand.DefineStringFlag("path", "", "destination path")
+	removeCommand := client.DefineSubCommand("remove", "remove object or container", wrap(remove))
+	removeCommand.DefineStringFlag("type", "object", "container or object")
+	client.DefineSubCommand("create", "create container", wrap(create))
 }
 
 func readFlag(c cli.Command, name, env string) string {
@@ -132,6 +135,51 @@ func info(c cli.Command) {
 		return
 	}
 	err = errorNotEnough
+}
+
+func remove(c cli.Command) {
+	var (
+		arglen  = len(c.Args())
+		object  string
+		err     error
+		message string
+	)
+	if arglen == 2 {
+		container = c.Arg(0).String()
+		object = c.Arg(1).String()
+	}
+	if arglen == 1 {
+		if c.Flag("type").String() == "container" {
+			container = c.Arg(0).String()
+		} else {
+			object = c.Arg(0).String()
+		}
+	}
+	if blank(container) {
+		log.Fatal(errorNotEnough)
+	}
+	if blank(object) {
+		err = api.Container(container).Remove()
+		message = fmt.Sprintf("container %s removed", container)
+	} else {
+		err = api.Container(container).Object(object).Remove()
+		message = fmt.Sprintf("object %s removed in container %s", object, container)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(message)
+}
+
+func create(c cli.Command) {
+	if len(c.Args()) == 0 {
+		log.Fatal(errorNotEnough)
+	}
+	var name = c.Arg(0).String()
+	if _, err := api.CreateContainer(name, false); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("created container %s\n", name)
 }
 
 func upload(c cli.Command) {
