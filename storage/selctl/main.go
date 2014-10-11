@@ -185,23 +185,15 @@ func wrap(callback func(cli.Command)) func(cli.Command) {
 	return func(c cli.Command) {
 		connect(c.Parent())
 		defer func() {
-			if cache {
-				data, err := api.Dump()
-				if err != nil {
-					panic(err)
-				}
-				if cacheSecure {
-					data = encrypt(data)
-				}
-				f, err := os.Create(cacheFilename)
-				if err != nil {
-					panic(err)
-				}
-				_, err = f.Write(data)
-				if err != nil {
-					panic(err)
-				}
+			if !cache {
+				return
 			}
+			data, _ := api.Dump()
+			if cacheSecure {
+				data = encrypt(data)
+			}
+			f, _ := os.Create(cacheFilename)
+			f.Write(data)
 		}()
 		callback(c)
 	}
