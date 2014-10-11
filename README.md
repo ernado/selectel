@@ -16,6 +16,7 @@ Selectel api
 [![GoDoc](https://godoc.org/github.com/ernado/selectel?status.svg)](https://godoc.org/github.com/ernado/selectel)
 [![Documentation Status](https://readthedocs.org/projects/selectel-api/badge/?version=latest)](http://selectel-api.readthedocs.org/en/latest/)
 
+
 Storage
 =======
 
@@ -62,6 +63,8 @@ func main() {
 ### Console client
 
 #### Installation
+
+[![Gobuild Download](http://gobuild.io/badge/github.com/ernado/selectel/storage/selctl/downloads.svg)](http://gobuild.io/github.com/ernado/selectel/storage/selctl)
 
 ```bash
 go get github.com/ernado/selectel/storage/selctl	
