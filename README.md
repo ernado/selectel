@@ -4,10 +4,10 @@ Selectel api
 =======
 ```
     Language  Files   Code  Comment  Blank  Total
-          Go     11   2093      132    114   2339
-    Markdown      1     22        0      8     30
+          Go     12   2246      153    129   2528
+    Markdown      1     73        0     25     98
 
-  Assertions: ~700
+  Assertions: ~747
   Integrational tests included
 ```
 
