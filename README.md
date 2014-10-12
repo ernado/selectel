@@ -18,7 +18,7 @@ Selectel api
 [![Go Walker](http://gowalker.org/api/v1/badge)](https://gowalker.org/github.com/ernado/selectel)
 
 
-Storage
+Selectel Storage API
 =======
 
 ### Installation
@@ -61,7 +61,7 @@ func main() {
 
 ```
 
-### Console client
+### Selectel Storage console client
 
 #### Installation
 
