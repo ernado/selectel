@@ -33,6 +33,7 @@ func TestUpload(t *testing.T) {
 					data, err := ioutil.ReadAll(request.Body)
 					So(err, ShouldBeNil)
 					So(string(data), ShouldEqual, "data")
+					So(request.Header.Get("etag"), ShouldEqual, "8d777f385d3dfec8815d20f7496026dc")
 					So(request.URL.String(), ShouldEqual, "https://xxx.selcdn.ru/container/filename")
 					resp.StatusCode = http.StatusCreated
 					return
@@ -64,10 +65,10 @@ func TestUpload(t *testing.T) {
 				So(c.Upload(data, "c", "f", "text/plain"), ShouldEqual, ErrorAuth)
 			})
 			Convey("Bad name", func() {
-				So(c.Upload(data, "c", randString(512), "text/plain"), ShouldEqual, ErrorBadName)
-				So(c.Upload(data, randString(512), randString(512), "text/plain"), ShouldEqual, ErrorBadName)
-				So(c.Upload(data, randString(512), "f", "text/plain"), ShouldEqual, ErrorBadName)
-				So(c.Upload(data, randString(512), "f", randString(1024)), ShouldEqual, ErrorBadName)
+				So(c.Upload(data, "c", randString(512), "text/plain"), ShouldNotBeNil)
+				So(c.Upload(data, randString(512), randString(512), "text/plain"), ShouldNotBeNil)
+				So(c.Upload(data, randString(512), "f", "text/plain"), ShouldNotBeNil)
+				So(c.Upload(data, randString(512), "f", randString(1024)), ShouldNotBeNil)
 			})
 			Convey("Bad url", func() {
 				callback := func(request *http.Request) (resp *http.Response, err error) {
