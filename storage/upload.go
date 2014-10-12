@@ -1,7 +1,10 @@
 package storage
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"io"
+	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
@@ -66,11 +69,33 @@ func (c *Client) UploadFile(filename, container string) error {
 	return c.Upload(f, container, stats.Name(), mimetype)
 }
 
-// Upload reads all data from reader and uploads to contaier with filename and content type
-func (c *Client) Upload(reader io.Reader, container, filename, contentType string) error {
+func (c *Client) upload(reader io.Reader, container, filename, contentType string, check bool) error {
+	var etag string
 	closer, ok := reader.(io.ReadCloser)
 	if ok {
 		defer closer.Close()
+	}
+
+	if check {
+		f, err := ioutil.TempFile(os.TempDir(), filename)
+		if err != nil {
+			return err
+		}
+		stat, _ := f.Stat()
+		path := stat.Name()
+		hasher := md5.New()
+		writer := io.MultiWriter(f, hasher)
+		_, err = io.Copy(writer, reader)
+		f.Close()
+		if err != nil {
+			return err
+		}
+		etag = hex.EncodeToString(hasher.Sum(nil))
+		reader, err = os.Open(filepath.Join(os.TempDir(), path))
+		defer os.Remove(path)
+		if err != nil {
+			return err
+		}
 	}
 
 	request, err := c.NewRequest(putMethod, reader, container, filename)
@@ -78,8 +103,11 @@ func (c *Client) Upload(reader io.Reader, container, filename, contentType strin
 		return err
 	}
 	if !blank(contentType) {
-		request.Header = http.Header{}
 		request.Header.Add(contentTypeHeader, contentType)
+	}
+
+	if !blank(etag) {
+		request.Header.Add(etagHeader, etag)
 	}
 
 	res, err := c.do(request)
@@ -93,4 +121,9 @@ func (c *Client) Upload(reader io.Reader, container, filename, contentType strin
 	}
 
 	return nil
+}
+
+// Upload reads all data from reader and uploads to contaier with filename and content type
+func (c *Client) Upload(reader io.Reader, container, filename, contentType string) error {
+	return c.upload(reader, container, filename, contentType, true)
 }
