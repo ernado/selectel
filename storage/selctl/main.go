@@ -7,13 +7,16 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/cheggaaa/pb"
 	"github.com/ernado/selectel/storage"
 	"github.com/jwaldrip/odin/cli"
 	"github.com/olekukonko/tablewriter"
 	"io"
 	"io/ioutil"
 	"log"
+	"mime"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -330,7 +333,22 @@ func upload(c cli.Command) {
 	if blank(container) || blank(path) {
 		log.Fatal(errorNotEnough)
 	}
-	if err := api.Container(container).UploadFile(path); err != nil {
+
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stat, err := os.Stat(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ext := filepath.Ext(path)
+	mimetype := mime.TypeByExtension(ext)
+	bar := pb.New64(stat.Size()).SetUnits(pb.U_BYTES)
+	bar.Start()
+	reader := io.TeeReader(f, bar)
+	if err := api.Container(container).Upload(reader, stat.Name(), mimetype); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("uploaded to %s\n", container)
