@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"path"
 )
 
 const (
@@ -77,7 +78,7 @@ func (c *Client) upload(reader io.Reader, container, filename, contentType strin
 	}
 
 	if check {
-		f, err := ioutil.TempFile(os.TempDir(), filename)
+		f, err := ioutil.TempFile(os.TempDir(), path.Base(filename))
 		if err != nil {
 			return err
 		}
