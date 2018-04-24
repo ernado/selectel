@@ -47,7 +47,7 @@ func TestContainerMethods(t *testing.T) {
 				So(info.Type, ShouldEqual, "private")
 				So(info.ObjectCount, ShouldEqual, 140)
 			})
-			Convey("Ok", func() {
+			Convey("Ok1", func() {
 				/*
 					Content-Length: 0
 					X-Container-Object-Count: 5
